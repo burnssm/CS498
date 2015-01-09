@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Windows;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CS498
 {
@@ -11,17 +11,26 @@ namespace CS498
         public MainWindow()
         {
             InitializeComponent();
+            AddDummyTasks();
         }
-        private void ComboBox_Loaded(object sender, RoutedEventArgs args)
-        {
-            var dataList = new List<string>();
-            for (var i = 1; i <= 12; i++)
-            {
-                dataList.Add(i.ToString());
-            }
 
-            var box = sender as System.Windows.Controls.ComboBox;
-            if (box != null) box.ItemsSource = dataList;
+        private void AddDummyTasks()
+        {
+            var tasks = new List<Task>();
+            for (var i = 0; i < 100; i++)
+            {
+                tasks.Add(new Task() {Name = "Hello" + i, Date = new DateTime().ToLongTimeString()});
+            }
+            TaskList.ItemsSource = null;
+            TaskList.ItemsSource = tasks;
+            GoogleList.ItemsSource = tasks;
+        }
+
+        private class Task
+        {
+            public string Name { get; set; }
+            public string Date { get; set; }
+            
         }
     }
 }
