@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows;
+using CS498.Lib;
 
 namespace CS498
 {
@@ -10,6 +11,7 @@ namespace CS498
     {
         public MainWindow()
         {
+            Calendar.Authorize();
             InitializeComponent();
         }
         private void ComboBox_Loaded(object sender, RoutedEventArgs args)
