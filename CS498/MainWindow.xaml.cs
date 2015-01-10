@@ -1,5 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Windows;
+using CS498.Lib;
+using System;
+
 
 namespace CS498
 {
@@ -10,6 +13,7 @@ namespace CS498
     {
         public MainWindow()
         {
+            Calendar.Authorize();
             InitializeComponent();
             AddDummyTasks();
         }
