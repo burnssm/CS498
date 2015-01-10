@@ -21,7 +21,7 @@ namespace CS498
             {
                 tasks.Add(new Task() {Name = "Hello" + i, Date = new DateTime().ToLongTimeString()});
             }
-            TaskList.ItemsSource = null;
+
             TaskList.ItemsSource = tasks;
             GoogleList.ItemsSource = tasks;
         }
