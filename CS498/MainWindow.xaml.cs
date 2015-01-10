@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Windows;
 using CS498.Lib;
 using System;
 
@@ -23,7 +22,7 @@ namespace CS498
             var tasks = new List<Task>();
             for (var i = 0; i < 100; i++)
             {
-                tasks.Add(new Task() {Name = "Hello" + i, Date = new DateTime().ToLongTimeString()});
+                tasks.Add(new Task {Name = "Hello" + i, Date = new DateTime().ToLongTimeString()});
             }
 
             TaskList.ItemsSource = tasks;

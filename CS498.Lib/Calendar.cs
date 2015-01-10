@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
+﻿using System.Threading;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Services;
@@ -27,10 +22,10 @@ namespace CS498.Lib
                 new FileDataStore("Calendar.Auth.Store")).Result;
 
             // Create the service.
-            var service = new CalendarService(new BaseClientService.Initializer()
+            var service = new CalendarService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = credential,
-                ApplicationName = "Calendar API Sample",
+                ApplicationName = "Calendar API Sample"
             });
         }
     }
