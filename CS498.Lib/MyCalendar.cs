@@ -4,20 +4,38 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.GData.Calendar;
-using Google.GData.Client;
 using Google.GData.Extensions;
 using CalendarService = Google.Apis.Calendar.v3.CalendarService;
 
 namespace CS498.Lib
 {
-    public class Calendar
+    public class MyCalendar
     {
         public static void Authorize()
+        {
+
+            Console.WriteLine("Discovery API Sample");
+            Console.WriteLine("====================");
+            try
+            {
+                Run().Wait();
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var e in ex.InnerExceptions)
+                {
+                    Console.WriteLine("ERROR: " + e.Message);
+                }
+            }
+        }
+
+        public static async Task Run()
         {
             var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                 new ClientSecrets
@@ -25,7 +43,7 @@ namespace CS498.Lib
                     ClientId = PrivateConsts.ClientId,
                     ClientSecret = PrivateConsts.ClientSecrets
                 },
-                new[] { CalendarService.Scope.Calendar },
+                new[] {CalendarService.Scope.Calendar},
                 "user",
                 CancellationToken.None,
                 new FileDataStore("Calendar.Auth.Store")).Result;
@@ -37,20 +55,13 @@ namespace CS498.Lib
                 ApplicationName = "Calendar API Sample",
             });
 
-            var query = new CalendarQuery
-            {
-                Uri = new Uri("https://www.google.com/calendar/feeds/default/allcalendars/full")
-            };
-            var x = service.CalendarList.Get("primary").Execute();
-            Console.Out.WriteLine(x.Description);
-            Console.Out.WriteLine(x.Kind);
-            Console.Out.WriteLine(x.Location);
-            Console.Out.WriteLine(x.Summary);
-        }
-
-        public static void AddEvent(CalendarService service, string title, string contents, string location,
-            DateTime startTime, DateTime endTime)
-        {
+            var primaryCalendar = service.Freebusy.Query(new FreeBusyRequest());
+            var calendar = new Calendar();
+            calendar.Id = "Little League Schedule";
+            calendar.Summary = "This calendar contains the practice schedule and game times.";
+            calendar.TimeZone = "America/Los_Angeles";
+            calendar.Location = "Oakland";
+            service.Calendars.Insert(calendar);
         }
     }
 }

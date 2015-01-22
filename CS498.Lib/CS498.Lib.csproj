@@ -97,7 +97,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Backend.cs" />
+    <Compile Include="Calendar.cs" />
     <Compile Include="PrivateConsts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
