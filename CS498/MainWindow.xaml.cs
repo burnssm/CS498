@@ -11,7 +11,7 @@ namespace CS498
     {
         public MainWindow()
         {
-            Calendar.Authorize();
+            MyCalendar.Authorize();
             InitializeComponent();
         }
         private void ComboBox_Loaded(object sender, RoutedEventArgs args)
