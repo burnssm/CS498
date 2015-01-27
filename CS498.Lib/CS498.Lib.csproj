@@ -97,9 +97,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OpenTimeBlocks.cs" />
     <Compile Include="PrivateConsts.cs" />
     <Compile Include="Calendar.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Task.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

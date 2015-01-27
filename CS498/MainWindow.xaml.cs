@@ -20,20 +20,26 @@ namespace CS498
         private void AddDummyTasks()
         {
             var tasks = new List<Task>();
+            var timeblocks = new List<OpenTimeBlocks>();
             for (var i = 0; i < 100; i++)
             {
-                tasks.Add(new Task {Name = "Hello" + i, Date = new DateTime().ToLongTimeString()});
+                tasks.Add(new Task
+                {
+                    Title = "Hello" + i,
+                    StartDateTime = DateTime.Now,
+                    EndDateTime = DateTime.Now.AddHours(2),
+                    Description = "Test"
+                });
+                timeblocks.Add(new OpenTimeBlocks
+                {
+                    StartDateTime = DateTime.Now,
+                    EndDateTime = DateTime.Now.AddHours(2)
+                });
             }
 
             TaskList.ItemsSource = tasks;
-            GoogleList.ItemsSource = tasks;
+            GoogleList.ItemsSource = timeblocks;
         }
 
-        private class Task
-        {
-            public string Name { get; set; }
-            public string Date { get; set; }
-            
-        }
     }
 }
