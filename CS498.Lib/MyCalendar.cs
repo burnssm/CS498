@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
@@ -13,8 +14,24 @@ namespace CS498.Lib
 {
     public class MyCalendar
     {
-        private CalendarService _service;
+        private static MyCalendar _instance;
+        private static CalendarService _service;
+        private Dictionary<string, string> _calendarIds;
+        private string _primaryId = "primary";
 
+        private MyCalendar()
+        {
+        }
+
+        public static MyCalendar Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = new MyCalendar();;
+                return _instance;
+            }
+        }
         public async Task Authorize()
         {
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -28,7 +45,6 @@ namespace CS498.Lib
                 CancellationToken.None,
                 new FileDataStore("Calendar.Auth.Store"));
 
-            // Create the service.
             _service = new CalendarService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = credential,
@@ -36,20 +52,69 @@ namespace CS498.Lib
             });
         }
 
-        public Task<Calendar> CalendarData
+        private void GetAllOwnedCalendars()
         {
-            get { return _service.Calendars.Get("abc").ExecuteAsync(); }
+            _calendarIds = new Dictionary<string, string>();
+            var req = _service.CalendarList.List().Execute();
+            foreach (var calendarListEntry in req.Items.Where(x => x.AccessRole.Equals("owner")))
+            {
+                _calendarIds.Add(calendarListEntry.Summary, calendarListEntry.Id);
+            }
         }
 
-        public bool AddEvent()
+        public Dictionary<string, string> GetAllIds()
         {
-            //todo
-            return false;
+            if (_calendarIds == null)
+                GetAllOwnedCalendars();
+            return _calendarIds;
         }
 
-        public bool GetFreeTime()
+        public void SetPrimaryId(string id)
         {
-            return false;
+            _primaryId = id;
+        }
+
+        public void AddEvent(string title, string description, string location, DateTime startDateTime, DateTime endDateTime)
+        {
+            var calendarEvent = new Event
+            {
+                Summary = title,
+                Description = description,
+                Location = location,
+                Start = new EventDateTime
+                {
+                    DateTime = startDateTime,
+                },
+                End = new EventDateTime
+                {
+                    DateTime = endDateTime,
+                }
+            };
+
+            _service.Events.Insert(calendarEvent, _primaryId).Execute();
+            
+        }
+
+        public async void GetFreeTime()
+        {
+            var calendar = _service.Calendars.Get(_primaryId).Execute();
+            EventsResource.ListRequest lr = _service.Events.List(entry.Id);
+            lr.TimeMin = DateTime.Now;
+            lr.TimeMax = DateTime.Now.AddDays(7);
+            lr.SingleEvents = true;
+            lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+            var request = await lr.ExecuteAsync();
+            var events = _service.Events.List(_primaryId).Execute();
+            var y = new EventDateTime()
+            {                    
+                DateTime =  DateTime.Now 
+            };
+            foreach (var es in events.Items) //.Where(x => x.Start.DateTime > y.DateTime))
+            {
+                Console.Out.WriteLine(es.Summary);
+                Console.Out.WriteLine(es.Start.DateTimeRaw);
+                Console.Out.WriteLine(es.End.DateTimeRaw);
+            }
         }
     }
 }

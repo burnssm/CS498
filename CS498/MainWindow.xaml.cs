@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using CS498.Lib;
 
@@ -11,7 +12,18 @@ namespace CS498
     {
         public MainWindow()
         {
-            MyCalendar.Authorize();
+            var x = MyCalendar.Instance;
+            try
+            {
+                x.Authorize().Wait();
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var e in ex.InnerExceptions)
+                {
+                    Console.WriteLine("ERROR: " + e.Message);
+                }
+            }
             InitializeComponent();
         }
         private void ComboBox_Loaded(object sender, RoutedEventArgs args)
