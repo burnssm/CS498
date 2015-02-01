@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Windows;
+using CS498.Lib;
+using System;
+
 
 namespace CS498
 {
@@ -10,18 +12,34 @@ namespace CS498
     {
         public MainWindow()
         {
+            Calendar.Authorize();
             InitializeComponent();
+            AddDummyTasks();
         }
-        private void ComboBox_Loaded(object sender, RoutedEventArgs args)
+
+        private void AddDummyTasks()
         {
-            var dataList = new List<string>();
-            for (var i = 1; i <= 12; i++)
+            var tasks = new List<GoogleEvent>();
+            var timeblocks = new List<OpenTimeBlocks>();
+            for (var i = 0; i < 100; i++)
             {
-                dataList.Add(i.ToString());
+                tasks.Add(new GoogleEvent
+                {
+                    Title = "Hello" + i,
+                    StartDateTime = DateTime.Now,
+                    EndDateTime = DateTime.Now.AddHours(2),
+                    Description = "Test"
+                });
+                timeblocks.Add(new OpenTimeBlocks
+                {
+                    StartDateTime = DateTime.Now,
+                    EndDateTime = DateTime.Now.AddHours(2)
+                });
             }
 
-            var box = sender as System.Windows.Controls.ComboBox;
-            if (box != null) box.ItemsSource = dataList;
+            TaskList.ItemsSource = tasks;
+            GoogleList.ItemsSource = timeblocks;
         }
+
     }
 }
