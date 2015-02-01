@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +16,8 @@ namespace CS498.Lib
 {
     public class MyCalendar
     {
-        private readonly List<TimeBlock> _freeTime;
-        private readonly List<GoogleEvent> _tasks;
+        private readonly ObservableCollection<TimeBlock> _freeTime;
+        private readonly ObservableCollection<GoogleEvent> _tasks;
         private static MyCalendar _instance;
         private static CalendarService _service;
         private string _primaryId;
@@ -24,8 +25,8 @@ namespace CS498.Lib
 
         private MyCalendar()
         {
-            _tasks = new List<GoogleEvent>();
-            _freeTime = new List<TimeBlock>();
+            _tasks = new ObservableCollection<GoogleEvent>();
+            _freeTime = new ObservableCollection<TimeBlock>();
             _primaryId = (string)Settings.Default["PrimaryId"];
         }
 
@@ -140,12 +141,12 @@ namespace CS498.Lib
             _freeTime.Insert(index, newTimeBlock);
         }
 
-        public List<GoogleEvent> GetTasks()
+        public ObservableCollection<GoogleEvent> GetTasks()
         {
             return _tasks;
-        } 
+        }
 
-        public List<TimeBlock> GetFreeTime()
+        public ObservableCollection<TimeBlock> GetFreeTime()
         {
             return _freeTime;
         }
