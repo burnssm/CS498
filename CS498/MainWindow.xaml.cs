@@ -19,11 +19,11 @@ namespace CS498
 
         private void AddDummyTasks()
         {
-            var tasks = new List<Task>();
+            var tasks = new List<Event>();
             var timeblocks = new List<OpenTimeBlocks>();
             for (var i = 0; i < 100; i++)
             {
-                tasks.Add(new Task
+                tasks.Add(new Event
                 {
                     Title = "Hello" + i,
                     StartDateTime = DateTime.Now,
