@@ -66,8 +66,7 @@ namespace CS498.Lib
             lr.SingleEvents = true;
             lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
             var request = lr.Execute();
-            var notFreeTime = new List<TimeBlock> { new TimeBlock(DateTime.Now, DateTime.Now)};
-            foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > notFreeTime.Last().End))
+            foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > DateTime.Now))
             {
                 _tasks.Add(new GoogleEvent
                 {
@@ -76,14 +75,13 @@ namespace CS498.Lib
                     TimeBlock = new TimeBlock(events.Start.DateTime.GetValueOrDefault(),  events.End.DateTime.GetValueOrDefault()),
                     Location = events.Location
                 });
-                notFreeTime.Add(new TimeBlock(events.Start.DateTime.GetValueOrDefault(), events.End.DateTime.GetValueOrDefault()));
             }
-            for (var x = 1; x < notFreeTime.Count; x++)
+            for (var x = 1; x < _tasks.Count; x++)
             {
-                _freeTime.Add(new TimeBlock(notFreeTime[x - 1].End, notFreeTime[x].Start));
+                _freeTime.Add(new TimeBlock(_tasks[x - 1].TimeBlock.End, _tasks[x].TimeBlock.Start));
             }
-            if (notFreeTime.Last().End < endTime)
-                _freeTime.Add(new TimeBlock(notFreeTime.Last().End, endTime));
+            if (_tasks.Last().TimeBlock.End < endTime)
+                _freeTime.Add(new TimeBlock(_tasks.Last().TimeBlock.End, endTime));
         }
 
         private void GetAllOwnedCalendars()
