@@ -25,7 +25,14 @@ namespace CS498.Lib
 
         private MyCalendar()
         {
-            _tasks = new ObservableCollection<GoogleEvent>();
+            //initialized with an event occurring from now-now so that freetime can be calculated correctly
+            _tasks = new ObservableCollection<GoogleEvent>
+            {
+                new GoogleEvent
+                {
+                    TimeBlock = new TimeBlock(DateTime.Now, DateTime.Now)
+                }
+            };
             _freeTime = new ObservableCollection<TimeBlock>();
             _primaryId = (string)Settings.Default["PrimaryId"];
         }
@@ -67,7 +74,7 @@ namespace CS498.Lib
             lr.SingleEvents = true;
             lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
             var request = lr.Execute();
-            foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > DateTime.Now))
+            foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > _tasks.Last().TimeBlock.End))
             {
                 _tasks.Add(new GoogleEvent
                 {
@@ -83,6 +90,9 @@ namespace CS498.Lib
             }
             if (_tasks.Last().TimeBlock.End < endTime)
                 _freeTime.Add(new TimeBlock(_tasks.Last().TimeBlock.End, endTime));
+
+            //remove task that was only used for comparison and list creation
+            _tasks.Remove(_tasks.First());
         }
 
         private void GetAllOwnedCalendars()
