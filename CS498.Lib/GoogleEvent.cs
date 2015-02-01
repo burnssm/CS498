@@ -1,5 +1,4 @@
-﻿using System;
-
+﻿
 namespace CS498.Lib
 {
     public class GoogleEvent
@@ -7,8 +6,7 @@ namespace CS498.Lib
         public string Title { get; set; }
         public string Description { get; set; }
         public string Location { get; set; }
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
+        public TimeBlock TimeBlock { get; set; }
 
     }
 }

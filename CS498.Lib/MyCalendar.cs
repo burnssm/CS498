@@ -18,8 +18,12 @@ namespace CS498.Lib
         private static CalendarService _service;
         private Dictionary<string, string> _calendarIds;
         private string _primaryId = "primary";
+        private List<TimeBlock> _freeTime;
 
-        private MyCalendar() {}
+        private MyCalendar()
+        {
+            _freeTime = new List<TimeBlock>();
+        }
 
         public static MyCalendar Instance
         {
@@ -48,6 +52,29 @@ namespace CS498.Lib
                 HttpClientInitializer = credential,
                 ApplicationName = "Calendar API Sample"
             });
+            UpdateFreeTime();
+        }
+
+        private void UpdateFreeTime()
+        {
+            var endTime = DateTime.Now.AddDays(7);
+            var lr = _service.Events.List(_primaryId);
+            lr.TimeMin = DateTime.Now;
+            lr.TimeMax = endTime;
+            lr.SingleEvents = true;
+            lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+            var request = lr.Execute();
+            var notFreeTime = new List<TimeBlock> { new TimeBlock(DateTime.Now) };
+            foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > notFreeTime.Last().End))
+            {
+                notFreeTime.Add(new TimeBlock(events.Start, events.End));
+            }
+            for (var x = 1; x < notFreeTime.Count; x++)
+            {
+                _freeTime.Add(new TimeBlock(notFreeTime[x - 1].End, notFreeTime[x].Start));
+            }
+            if(notFreeTime.Last().End < endTime)
+                _freeTime.Add(new TimeBlock(notFreeTime.Last().End, endTime));
         }
 
         private void GetAllOwnedCalendars()
@@ -81,38 +108,30 @@ namespace CS498.Lib
                 Location = gEvent.Location,
                 Start = new EventDateTime
                 {
-                    DateTime = gEvent.StartDateTime,
+                    DateTime = gEvent.TimeBlock.Start,
                 },
                 End = new EventDateTime
                 {
-                    DateTime = gEvent.EndDateTime,
+                    DateTime = gEvent.TimeBlock.End,
                 }
             };
 
             _service.Events.Insert(calendarEvent, _primaryId).Execute();
+            foreach (var timeBlock in _freeTime)
+            {
+                if (timeBlock.End <= gEvent.TimeBlock.Start) continue;
+                var index = _freeTime.IndexOf(timeBlock);
+                _freeTime[index] = new TimeBlock(timeBlock.Start, gEvent.TimeBlock.Start);
+                if (timeBlock != _freeTime.Last()) index++;
+                _freeTime.Insert(index, new TimeBlock(gEvent.TimeBlock.End, timeBlock.End));
+                break;
+            }
             
         }
 
-        public async void GetFreeTime()
+        public List<TimeBlock> GetFreeTime()
         {
-            var calendar = _service.Calendars.Get(_primaryId).Execute();
-            var lr = _service.Events.List(_primaryId);
-            lr.TimeMin = DateTime.Now;
-            lr.TimeMax = DateTime.Now.AddDays(7);
-            lr.SingleEvents = true;
-            lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-            var request = await lr.ExecuteAsync();
-            var events = _service.Events.List(_primaryId).Execute();
-            var y = new EventDateTime()
-            {                    
-                DateTime =  DateTime.Now 
-            };
-            foreach (var es in events.Items) //.Where(x => x.Start.DateTime > y.DateTime))
-            {
-                Console.Out.WriteLine(es.Summary);
-                Console.Out.WriteLine(es.Start.DateTimeRaw);
-                Console.Out.WriteLine(es.End.DateTimeRaw);
-            }
+            return _freeTime;
         }
     }
 }

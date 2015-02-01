@@ -13,10 +13,9 @@ namespace CS498
     {
         public MainWindow()
         {
-            var x = MyCalendar.Instance;
             try
             {
-                x.Authorize().Wait();
+                MyCalendar.Instance.Authorize().Wait();
             }
             catch (AggregateException ex)
             {
@@ -27,26 +26,27 @@ namespace CS498
             }
             InitializeComponent();
             AddDummyTasks();
+            MyCalendar.Instance.GetFreeTime();
         }
 
         private void AddDummyTasks()
         {
             var tasks = new List<GoogleEvent>();
-            var timeblocks = new List<OpenTimeBlocks>();
+            var timeblocks = new List<TimeBlock>();
             for (var i = 0; i < 100; i++)
             {
+                var timeBlock = new TimeBlock
+                {
+                    Start = DateTime.Now,
+                    End = DateTime.Now.AddHours(2)
+                };
                 tasks.Add(new GoogleEvent
                 {
                     Title = "Hello" + i,
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2),
+                    TimeBlock = timeBlock,
                     Description = "Test"
                 });
-                timeblocks.Add(new OpenTimeBlocks
-                {
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2)
-                });
+                timeblocks.Add(timeBlock);
             }
 
             TaskList.ItemsSource = tasks;

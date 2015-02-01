@@ -106,7 +106,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OpenTimeBlocks.cs" />
+    <Compile Include="TimeBlock.cs" />
     <Compile Include="MyCalendar.cs" />
     <Compile Include="PrivateConsts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
