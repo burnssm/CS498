@@ -18,10 +18,12 @@ namespace CS498.Lib
         private static CalendarService _service;
         private Dictionary<string, string> _calendarIds;
         private string _primaryId = "primary";
-        private List<TimeBlock> _freeTime;
+        private readonly List<TimeBlock> _freeTime;
+        private readonly List<GoogleEvent> _tasks;
 
         private MyCalendar()
         {
+            _tasks = new List<GoogleEvent>();
             _freeTime = new List<TimeBlock>();
         }
 
@@ -30,7 +32,7 @@ namespace CS498.Lib
             get
             {
                 if (_instance == null)
-                    _instance = new MyCalendar();;
+                    _instance = new MyCalendar(); ;
                 return _instance;
             }
         }
@@ -52,10 +54,11 @@ namespace CS498.Lib
                 HttpClientInitializer = credential,
                 ApplicationName = "Calendar API Sample"
             });
-            UpdateFreeTime();
+
+            UpdateTasksAndFreeTime();
         }
 
-        private void UpdateFreeTime()
+        private void UpdateTasksAndFreeTime()
         {
             var endTime = DateTime.Now.AddDays(7);
             var lr = _service.Events.List(_primaryId);
@@ -67,13 +70,20 @@ namespace CS498.Lib
             var notFreeTime = new List<TimeBlock> { new TimeBlock(DateTime.Now) };
             foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > notFreeTime.Last().End))
             {
+                _tasks.Add(new GoogleEvent
+                {
+                    Title = events.Summary,
+                    Description = events.Description,
+                    TimeBlock = new TimeBlock(events.Start, events.End),
+                    Location = events.Location
+                });
                 notFreeTime.Add(new TimeBlock(events.Start, events.End));
             }
             for (var x = 1; x < notFreeTime.Count; x++)
             {
                 _freeTime.Add(new TimeBlock(notFreeTime[x - 1].End, notFreeTime[x].Start));
             }
-            if(notFreeTime.Last().End < endTime)
+            if (notFreeTime.Last().End < endTime)
                 _freeTime.Add(new TimeBlock(notFreeTime.Last().End, endTime));
         }
 
@@ -117,6 +127,11 @@ namespace CS498.Lib
             };
 
             _service.Events.Insert(calendarEvent, _primaryId).Execute();
+            foreach (var googleEvent in _tasks.Where(googleEvent => googleEvent.TimeBlock.Start > gEvent.TimeBlock.End))
+            {
+                _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
+                break;
+            }
             foreach (var timeBlock in _freeTime)
             {
                 if (timeBlock.End <= gEvent.TimeBlock.Start) continue;
@@ -126,8 +141,13 @@ namespace CS498.Lib
                 _freeTime.Insert(index, new TimeBlock(gEvent.TimeBlock.End, timeBlock.End));
                 break;
             }
-            
+
         }
+
+        public List<GoogleEvent> GetTasks()
+        {
+            return _tasks;
+        } 
 
         public List<TimeBlock> GetFreeTime()
         {

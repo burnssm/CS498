@@ -13,6 +13,7 @@ namespace CS498
     {
         public MainWindow()
         {
+            InitializeComponent();
             try
             {
                 MyCalendar.Instance.Authorize().Wait();
@@ -24,33 +25,10 @@ namespace CS498
                     Console.WriteLine("ERROR: " + e.Message);
                 }
             }
-            InitializeComponent();
-            AddDummyTasks();
             MyCalendar.Instance.GetFreeTime();
-        }
 
-        private void AddDummyTasks()
-        {
-            var tasks = new List<GoogleEvent>();
-            var timeblocks = new List<TimeBlock>();
-            for (var i = 0; i < 100; i++)
-            {
-                var timeBlock = new TimeBlock
-                {
-                    Start = DateTime.Now,
-                    End = DateTime.Now.AddHours(2)
-                };
-                tasks.Add(new GoogleEvent
-                {
-                    Title = "Hello" + i,
-                    TimeBlock = timeBlock,
-                    Description = "Test"
-                });
-                timeblocks.Add(timeBlock);
-            }
-
-            TaskList.ItemsSource = tasks;
-            GoogleList.ItemsSource = timeblocks;
+            TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
+            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
         }
 
     }
