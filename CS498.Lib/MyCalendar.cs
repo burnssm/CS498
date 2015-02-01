@@ -29,12 +29,7 @@ namespace CS498.Lib
 
         public static MyCalendar Instance
         {
-            get
-            {
-                if (_instance == null)
-                    _instance = new MyCalendar(); ;
-                return _instance;
-            }
+            get { return _instance ?? (_instance = new MyCalendar()); }
         }
         public async Task Authorize()
         {
@@ -67,24 +62,44 @@ namespace CS498.Lib
             lr.SingleEvents = true;
             lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
             var request = lr.Execute();
-            var notFreeTime = new List<TimeBlock> { new TimeBlock(DateTime.Now) };
+            var notFreeTime = new List<TimeBlock> { new TimeBlock
+            {
+                Start = DateTime.Now, 
+                End = DateTime.Now
+            }};
             foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > notFreeTime.Last().End))
             {
                 _tasks.Add(new GoogleEvent
                 {
                     Title = events.Summary,
                     Description = events.Description,
-                    TimeBlock = new TimeBlock(events.Start, events.End),
+                    TimeBlock = new TimeBlock
+                    {
+                        Start = events.Start.DateTime.GetValueOrDefault(), 
+                        End = events.End.DateTime.GetValueOrDefault()
+                    },
                     Location = events.Location
                 });
-                notFreeTime.Add(new TimeBlock(events.Start, events.End));
+                notFreeTime.Add(new TimeBlock
+                {
+                    Start = events.Start.DateTime.GetValueOrDefault(),
+                    End = events.End.DateTime.GetValueOrDefault()
+                });
             }
             for (var x = 1; x < notFreeTime.Count; x++)
             {
-                _freeTime.Add(new TimeBlock(notFreeTime[x - 1].End, notFreeTime[x].Start));
+                _freeTime.Add(new TimeBlock
+                {
+                    Start = notFreeTime[x - 1].End, 
+                    End = notFreeTime[x].Start
+                });
             }
             if (notFreeTime.Last().End < endTime)
-                _freeTime.Add(new TimeBlock(notFreeTime.Last().End, endTime));
+                _freeTime.Add(new TimeBlock
+                {
+                    Start = notFreeTime.Last().End, 
+                    End = endTime
+                });
         }
 
         private void GetAllOwnedCalendars()
@@ -135,13 +150,18 @@ namespace CS498.Lib
             foreach (var timeBlock in _freeTime)
             {
                 if (timeBlock.End <= gEvent.TimeBlock.Start) continue;
-                var index = _freeTime.IndexOf(timeBlock);
-                _freeTime[index] = new TimeBlock(timeBlock.Start, gEvent.TimeBlock.Start);
-                if (timeBlock != _freeTime.Last()) index++;
-                _freeTime.Insert(index, new TimeBlock(gEvent.TimeBlock.End, timeBlock.End));
+                var newTimeBlock = new TimeBlock
+                {
+                    Start = gEvent.TimeBlock.End, 
+                    End = timeBlock.End
+                };
+                timeBlock.End = gEvent.TimeBlock.Start;
+
+                var index = timeBlock == _freeTime.Last() ? _freeTime.IndexOf(timeBlock) : _freeTime.IndexOf(timeBlock)+1;
+
+                _freeTime.Insert(index, newTimeBlock);
                 break;
             }
-
         }
 
         public List<GoogleEvent> GetTasks()
