@@ -108,8 +108,8 @@
 		                                VerticalAlignment="Bottom"/>
 
                                 <Label Grid.Column="0" Grid.Row="7" Content="Time Needed" />
-                                <xctk:IntegerUpDown Name="Hours" Grid.Row ="7" Grid.Column="1"  Minimum="0" Value="0"/>
-                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0"/>
+                                <xctk:IntegerUpDown Name="Hours" Grid.Row ="7" Grid.Column="1"  Minimum="0" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
+                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
 
                                 <Button Grid.Column="1" Grid.Row="9"  Content="Save"  Margin="8px" Click="Save_OnClick"/>
                                 <Button Grid.Column="2" Grid.Row="9" Content="Cancel"  Margin="8px" Click="Cancel_OnClick"/>
