@@ -7,6 +7,11 @@ namespace CS498.Lib
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
 
+        public TimeBlock(DateTime start, DateTime end)
+        {
+            Start = start;
+            End = end;
+        }
         public override string ToString()
         {
             return Start.ToString("t") + " - " + End.ToString("t");

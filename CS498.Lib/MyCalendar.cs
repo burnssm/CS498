@@ -9,22 +9,24 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using CalendarService = Google.Apis.Calendar.v3.CalendarService;
+using Settings = CS498.Lib.Properties.Settings;
 
 namespace CS498.Lib
 {
     public class MyCalendar
     {
-        private static MyCalendar _instance;
-        private static CalendarService _service;
-        private Dictionary<string, string> _calendarIds;
-        private string _primaryId = "primary";
         private readonly List<TimeBlock> _freeTime;
         private readonly List<GoogleEvent> _tasks;
+        private static MyCalendar _instance;
+        private static CalendarService _service;
+        private string _primaryId;
+        private Dictionary<string, string> _calendarIds;
 
         private MyCalendar()
         {
             _tasks = new List<GoogleEvent>();
             _freeTime = new List<TimeBlock>();
+            _primaryId = (string)Settings.Default["PrimaryId"];
         }
 
         public static MyCalendar Instance
@@ -62,44 +64,24 @@ namespace CS498.Lib
             lr.SingleEvents = true;
             lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
             var request = lr.Execute();
-            var notFreeTime = new List<TimeBlock> { new TimeBlock
-            {
-                Start = DateTime.Now, 
-                End = DateTime.Now
-            }};
+            var notFreeTime = new List<TimeBlock> { new TimeBlock(DateTime.Now, DateTime.Now)};
             foreach (var events in request.Items.Where(events => events.Start.DateTime.GetValueOrDefault() > notFreeTime.Last().End))
             {
                 _tasks.Add(new GoogleEvent
                 {
                     Title = events.Summary,
                     Description = events.Description,
-                    TimeBlock = new TimeBlock
-                    {
-                        Start = events.Start.DateTime.GetValueOrDefault(), 
-                        End = events.End.DateTime.GetValueOrDefault()
-                    },
+                    TimeBlock = new TimeBlock(events.Start.DateTime.GetValueOrDefault(),  events.End.DateTime.GetValueOrDefault()),
                     Location = events.Location
                 });
-                notFreeTime.Add(new TimeBlock
-                {
-                    Start = events.Start.DateTime.GetValueOrDefault(),
-                    End = events.End.DateTime.GetValueOrDefault()
-                });
+                notFreeTime.Add(new TimeBlock(events.Start.DateTime.GetValueOrDefault(), events.End.DateTime.GetValueOrDefault()));
             }
             for (var x = 1; x < notFreeTime.Count; x++)
             {
-                _freeTime.Add(new TimeBlock
-                {
-                    Start = notFreeTime[x - 1].End, 
-                    End = notFreeTime[x].Start
-                });
+                _freeTime.Add(new TimeBlock(notFreeTime[x - 1].End, notFreeTime[x].Start));
             }
             if (notFreeTime.Last().End < endTime)
-                _freeTime.Add(new TimeBlock
-                {
-                    Start = notFreeTime.Last().End, 
-                    End = endTime
-                });
+                _freeTime.Add(new TimeBlock(notFreeTime.Last().End, endTime));
         }
 
         private void GetAllOwnedCalendars()
@@ -122,6 +104,8 @@ namespace CS498.Lib
         public void SetPrimaryId(string id)
         {
             _primaryId = id;
+            Settings.Default["PrimaryId"] = id;
+            Settings.Default.Save();
         }
 
         public void AddEvent(GoogleEvent gEvent)
@@ -146,11 +130,7 @@ namespace CS498.Lib
             _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
 
             var timeBlock = _freeTime.First(x => x.End > gEvent.TimeBlock.Start);
-            var newTimeBlock = new TimeBlock
-            {
-                Start = gEvent.TimeBlock.End,
-                End = timeBlock.End
-            };
+            var newTimeBlock = new TimeBlock(gEvent.TimeBlock.End, timeBlock.End);
             timeBlock.End = gEvent.TimeBlock.Start;
 
             var index = timeBlock == _freeTime.Last() ? _freeTime.IndexOf(timeBlock) : _freeTime.IndexOf(timeBlock) + 1;
