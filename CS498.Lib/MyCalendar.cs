@@ -19,9 +19,7 @@ namespace CS498.Lib
         private Dictionary<string, string> _calendarIds;
         private string _primaryId = "primary";
 
-        private MyCalendar()
-        {
-        }
+        private MyCalendar() {}
 
         public static MyCalendar Instance
         {
@@ -74,20 +72,20 @@ namespace CS498.Lib
             _primaryId = id;
         }
 
-        public void AddEvent(string title, string description, string location, DateTime startDateTime, DateTime endDateTime)
+        public void AddEvent(GoogleEvent gEvent)
         {
             var calendarEvent = new Event
             {
-                Summary = title,
-                Description = description,
-                Location = location,
+                Summary = gEvent.Title,
+                Description = gEvent.Description,
+                Location = gEvent.Location,
                 Start = new EventDateTime
                 {
-                    DateTime = startDateTime,
+                    DateTime = gEvent.StartDateTime,
                 },
                 End = new EventDateTime
                 {
-                    DateTime = endDateTime,
+                    DateTime = gEvent.EndDateTime,
                 }
             };
 
@@ -98,7 +96,7 @@ namespace CS498.Lib
         public async void GetFreeTime()
         {
             var calendar = _service.Calendars.Get(_primaryId).Execute();
-            EventsResource.ListRequest lr = _service.Events.List(entry.Id);
+            var lr = _service.Events.List(_primaryId);
             lr.TimeMin = DateTime.Now;
             lr.TimeMax = DateTime.Now.AddDays(7);
             lr.SingleEvents = true;
