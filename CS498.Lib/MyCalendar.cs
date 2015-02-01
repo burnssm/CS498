@@ -147,9 +147,8 @@ namespace CS498.Lib
                 _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
                 break;
             }
-            foreach (var timeBlock in _freeTime)
+            foreach (var timeBlock in _freeTime.Where(x => x.End > gEvent.TimeBlock.Start))
             {
-                if (timeBlock.End <= gEvent.TimeBlock.Start) continue;
                 var newTimeBlock = new TimeBlock
                 {
                     Start = gEvent.TimeBlock.End, 
