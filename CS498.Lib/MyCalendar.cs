@@ -52,6 +52,8 @@ namespace CS498.Lib
                 ApplicationName = "Calendar API Sample"
             });
 
+            if (_primaryId.Equals((string)Settings.Default["PrimaryId"]))
+                SetPrimaryId(_service.Calendars.Get(_primaryId).Execute().Id);
             UpdateTasksAndFreeTime();
         }
 
@@ -90,7 +92,7 @@ namespace CS498.Lib
             var req = _service.CalendarList.List().Execute();
             foreach (var calendarListEntry in req.Items.Where(x => x.AccessRole.Equals("owner")))
             {
-                _calendarIds.Add(calendarListEntry.Summary, calendarListEntry.Id);
+                _calendarIds.Add(calendarListEntry.Id, calendarListEntry.Summary);
             }
         }
 
@@ -146,6 +148,11 @@ namespace CS498.Lib
         public List<TimeBlock> GetFreeTime()
         {
             return _freeTime;
+        }
+
+        public string GetIdName()
+        {
+            return _calendarIds[_primaryId];
         }
     }
 }

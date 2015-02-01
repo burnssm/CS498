@@ -30,7 +30,8 @@ namespace CS498
 
             TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
             GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
-            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Keys.ToList().OrderBy(x => x);
+            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Values.ToList().OrderBy(x => x);
+            GoogleDate.SelectedValue = MyCalendar.Instance.GetIdName();
         }
 
     }
