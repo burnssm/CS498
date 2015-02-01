@@ -25,13 +25,13 @@ namespace CS498.Lib.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string _primaryId {
+        [global::System.Configuration.DefaultSettingValueAttribute("primary")]
+        public string PrimaryId {
             get {
-                return ((string)(this["_primaryId"]));
+                return ((string)(this["PrimaryId"]));
             }
             set {
-                this["_primaryId"] = value;
+                this["PrimaryId"] = value;
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CS498.Lib;
 using System;
 
@@ -29,6 +30,7 @@ namespace CS498
 
             TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
             GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
+            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Keys.ToList().OrderBy(x => x);
         }
 
     }
