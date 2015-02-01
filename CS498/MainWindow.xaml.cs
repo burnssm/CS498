@@ -19,11 +19,11 @@ namespace CS498
 
         private void AddDummyTasks()
         {
-            var tasks = new List<Event>();
+            var tasks = new List<GoogleEvent>();
             var timeblocks = new List<OpenTimeBlocks>();
             for (var i = 0; i < 100; i++)
             {
-                tasks.Add(new Event
+                tasks.Add(new GoogleEvent
                 {
                     Title = "Hello" + i,
                     StartDateTime = DateTime.Now,

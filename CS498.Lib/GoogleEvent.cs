@@ -2,7 +2,7 @@
 
 namespace CS498.Lib
 {
-    public class Event
+    public class GoogleEvent
     {
         public string Title { get; set; }
         public string Description { get; set; }
