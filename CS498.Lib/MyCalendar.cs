@@ -140,27 +140,22 @@ namespace CS498.Lib
                     DateTime = gEvent.TimeBlock.End,
                 }
             };
-
             _service.Events.Insert(calendarEvent, _primaryId).Execute();
-            foreach (var googleEvent in _tasks.Where(googleEvent => googleEvent.TimeBlock.Start > gEvent.TimeBlock.End))
-            {
-                _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
-                break;
-            }
-            foreach (var timeBlock in _freeTime.Where(x => x.End > gEvent.TimeBlock.Start))
-            {
-                var newTimeBlock = new TimeBlock
-                {
-                    Start = gEvent.TimeBlock.End, 
-                    End = timeBlock.End
-                };
-                timeBlock.End = gEvent.TimeBlock.Start;
 
-                var index = timeBlock == _freeTime.Last() ? _freeTime.IndexOf(timeBlock) : _freeTime.IndexOf(timeBlock)+1;
+            var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.End);
+            _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
 
-                _freeTime.Insert(index, newTimeBlock);
-                break;
-            }
+            var timeBlock = _freeTime.First(x => x.End > gEvent.TimeBlock.Start);
+            var newTimeBlock = new TimeBlock
+            {
+                Start = gEvent.TimeBlock.End,
+                End = timeBlock.End
+            };
+            timeBlock.End = gEvent.TimeBlock.Start;
+
+            var index = timeBlock == _freeTime.Last() ? _freeTime.IndexOf(timeBlock) : _freeTime.IndexOf(timeBlock) + 1;
+
+            _freeTime.Insert(index, newTimeBlock);
         }
 
         public List<GoogleEvent> GetTasks()
