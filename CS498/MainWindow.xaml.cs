@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using CS498.Lib;
 using System;
 
@@ -12,33 +14,24 @@ namespace CS498
     {
         public MainWindow()
         {
-            Calendar.Authorize();
             InitializeComponent();
-            AddDummyTasks();
-        }
-
-        private void AddDummyTasks()
-        {
-            var tasks = new List<GoogleEvent>();
-            var timeblocks = new List<OpenTimeBlocks>();
-            for (var i = 0; i < 100; i++)
+            try
             {
-                tasks.Add(new GoogleEvent
-                {
-                    Title = "Hello" + i,
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2),
-                    Description = "Test"
-                });
-                timeblocks.Add(new OpenTimeBlocks
-                {
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2)
-                });
+                MyCalendar.Instance.Authorize().Wait();
             }
+            catch (AggregateException ex)
+            {
+                foreach (var e in ex.InnerExceptions)
+                {
+                    Console.WriteLine("ERROR: " + e.Message);
+                }
+            }
+            MyCalendar.Instance.GetFreeTime();
 
-            TaskList.ItemsSource = tasks;
-            GoogleList.ItemsSource = timeblocks;
+            TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
+            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
+            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Values.ToList().OrderBy(x => x);
+            GoogleDate.SelectedValue = MyCalendar.Instance.GetIdName();
         }
 
     }

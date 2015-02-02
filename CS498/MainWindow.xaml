@@ -57,7 +57,7 @@
                                                 <RowDefinition Height="*"/>
                                             </Grid.RowDefinitions>
                                             <Label Content="{Binding Title}" Grid.Row="0" />
-                                            <Label Content="{Binding StartDateTime}" Grid.Row="1" Padding="16px"/>
+                                            <Label Content="{Binding TimeBlock}" Grid.Row="1" Padding="16px"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -138,7 +138,7 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <CheckBox Name="CheckBox" Grid.Column="0" VerticalAlignment="Center"/>
-                                                <Label Content="{Binding TimeBlock}" Grid.Column="1" Padding="16px"
+                                                <Label Content="{Binding Display}" Grid.Column="1" Padding="16px"
                                                     VerticalAlignment="Center"/>
                                             </Grid>
                                         </DataTemplate>
