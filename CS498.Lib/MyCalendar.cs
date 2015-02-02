@@ -22,12 +22,13 @@ namespace CS498.Lib
         private static CalendarService _service;
         private string _primaryId;
         private Dictionary<string, string> _calendarIds;
+        private const string PrimaryId = "PrimaryId";
 
         private MyCalendar()
         {
             _tasks = new ObservableCollection<GoogleEvent>();
             _freeTime = new ObservableCollection<TimeBlock>();
-            _primaryId = (string)Settings.Default["PrimaryId"];
+            _primaryId = (string)Settings.Default[PrimaryId];
         }
 
         public static MyCalendar Instance
@@ -53,7 +54,7 @@ namespace CS498.Lib
                 ApplicationName = "Calendar API Sample"
             });
 
-            if (_primaryId.Equals((string)Settings.Default["PrimaryId"]))
+            if (_primaryId.Equals((string)Settings.Default[PrimaryId]))
                 SetPrimaryId(_service.Calendars.Get(_primaryId).Execute().Id);
             UpdateTasksAndFreeTime();
         }
@@ -111,7 +112,7 @@ namespace CS498.Lib
         public void SetPrimaryId(string id)
         {
             _primaryId = id;
-            Settings.Default["PrimaryId"] = id;
+            Settings.Default[PrimaryId] = id;
             Settings.Default.Save();
         }
 
