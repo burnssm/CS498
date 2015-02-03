@@ -1,4 +1,7 @@
-﻿using CS498.Lib;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using CS498.Lib;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -18,33 +21,24 @@ namespace CS498
 
         public MainWindow()
         {
-            Calendar.Authorize();
             InitializeComponent();
-            _events = new ObservableCollection<GoogleEvent>();
-            _timeBlocks = new ObservableCollection<OpenTimeBlocks>();
-            AddDummyTasks();
-        }
-
-        private void AddDummyTasks()
-        {
-            for (var i = 0; i < 10; i++)
+            try
             {
-                _events.Add(new GoogleEvent
-                {
-                    Title = "Hello" + i,
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2),
-                    Description = "Test"
-                });
-                _timeBlocks.Add(new OpenTimeBlocks
-                {
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(2)
-                });
+                MyCalendar.Instance.Authorize().Wait();
             }
+            catch (AggregateException ex)
+            {
+                foreach (var e in ex.InnerExceptions)
+                {
+                    Console.WriteLine("ERROR: " + e.Message);
+                }
+            }
+            MyCalendar.Instance.GetFreeTime();
 
-            TaskList.ItemsSource = _events;
-            GoogleList.ItemsSource = _timeBlocks;
+            TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
+            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
+            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Values.ToList().OrderBy(x => x);
+            GoogleDate.SelectedValue = MyCalendar.Instance.GetIdName();
         }
 
         private void TaskDates_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
