@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using CS498.Lib;
-using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using Calendar = CS498.Lib.Calendar;
+using Calendar = CS498.Lib.MyCalendar;
 
 
 namespace CS498
@@ -17,49 +16,24 @@ namespace CS498
     public partial class MainWindow
     {
         private ObservableCollection<GoogleEvent> _events;
-        private ObservableCollection<OpenTimeBlocks> _timeBlocks;
+        private ObservableCollection<TimeBlock> _timeBlock;
 
         public MainWindow()
         {
             InitializeComponent();
-            try
-            {
-                MyCalendar.Instance.Authorize().Wait();
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var e in ex.InnerExceptions)
-                {
-                    Console.WriteLine("ERROR: " + e.Message);
-                }
-            }
-            MyCalendar.Instance.GetFreeTime();
-
-            TaskList.ItemsSource = MyCalendar.Instance.GetTasks();
-            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime();
-            GoogleDate.ItemsSource = MyCalendar.Instance.GetAllIds().Values.ToList().OrderBy(x => x);
-            GoogleDate.SelectedValue = MyCalendar.Instance.GetIdName();
-        }
-
-        private void TaskDates_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var date = e.AddedItems[0] as string;
-
-            //TODO Check if Calendar is in list or get it
         }
 
         private void GoogleDate_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var calendar = e.AddedItems[0] as string;
-            //TODO Get TimeBlocks for the selected time
+            UpdateTimeBlock();
         }
 
-        private void Save_OnClick(object sender, RoutedEventArgs e)
+        private async void Save_OnClick(object sender, RoutedEventArgs e)
         {
             var taskName = TaskName.Text;
             var description = Description.Text;
 
-            var selectedTimeBlock = (OpenTimeBlocks)GoogleList.SelectedItem;
+            var selectedTimeBlock = (TimeBlock)GoogleList.SelectedItem;
 
             var hour = Hours.Value ?? 0;
             var minutes = Minutes.Value ?? 0;
@@ -69,13 +43,12 @@ namespace CS498
                 var newEvent = new GoogleEvent
                 {
                     Title = taskName,
-                    StartDateTime = selectedTimeBlock.StartDateTime,
-                    EndDateTime = selectedTimeBlock.StartDateTime.AddHours(hour).AddMinutes(minutes),
+                    TimeBlock = new TimeBlock(selectedTimeBlock.Start ,selectedTimeBlock.Start.AddHours(hour).AddMinutes(minutes)),
                     Description = description
                 };
 
-                _events.Add(newEvent);
-                //TODO Create the event on the calendar
+                MyCalendar.Instance.AddEvent(newEvent);
+                _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
             }
             else
             {
@@ -95,6 +68,7 @@ namespace CS498
             TaskName.Clear();
             Description.Text = "";
             DateTimePicker.Text = "";
+            GoogleList.ItemsSource = null;
             GoogleList.UnselectAll();
             Hours.Value = 0;
             Minutes.Value = 0;
@@ -105,12 +79,71 @@ namespace CS498
             ClearForm();
         }
 
+        private Tuple<int, int> GetHourMinute()
+        {
+            var hour = 0;
+            var minutes = 0;
+            if (Hours != null)
+            {
+                hour = Hours.Value ?? 0;
+            }
+            if (Minutes != null)
+            {
+                minutes = Minutes.Value ?? 0;
+            }
+            return new Tuple<int, int>(hour,minutes);
+        }
+
         private void HoursOrMinutes_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            var hour = Hours.Value ?? 0;
-            var minute = Minutes.Value ?? 0;
+            UpdateTimeBlock();
+        }
 
-            //TODO Get time blocks for the amount of hours and minutes
+        private void UpdateTimeBlock()
+        {
+
+            if (GoogleDate == null || GoogleDate.SelectedValue == null) return;
+            var googleDate = Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue);
+            var hoursMinutes = GetHourMinute();
+            if (DateTimePicker.Value == null) return;
+            var timeEnd = DateTimePicker.Value.Value;
+            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime(hoursMinutes.Item1, hoursMinutes.Item2, timeEnd, (TimeBlockChoices)googleDate);
+        }
+
+        private async void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var calendar = e.AddedItems[0] as string;
+
+            MyCalendar.Instance.SetPrimaryId(calendar);
+            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+        }
+
+        private void DateTimePicker_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            UpdateTimeBlock();
+        }
+
+        private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await MyCalendar.Instance.Authorize();
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var ie in ex.InnerExceptions)
+                {
+                    Console.WriteLine("ERROR: " + ie.Message);
+                }
+            }
+
+            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+            _timeBlock = new ObservableCollection<TimeBlock>();
+
+            TaskList.ItemsSource = _events;
+            GoogleList.ItemsSource = _timeBlock;
+            Calendar.ItemsSource = MyCalendar.Instance.GetAllIds().Result;
+            Calendar.SelectedValue = MyCalendar.Instance.GetIdName();
         }
     }
 }

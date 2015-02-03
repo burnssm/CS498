@@ -17,9 +17,13 @@ namespace CS498.Lib
             return Start.ToString("t") + " - " + End.ToString("t");
         }
 
-        public string Display
+        public string Date
         {
-            get { return ToString(); }
+            get { return Start.ToString("M") + " - " + End.ToString("M"); }
+        }
+        public string Time
+        {
+            get { return Start.ToString("t") + " - " + End.ToString("t"); }
         }
     }
 }
