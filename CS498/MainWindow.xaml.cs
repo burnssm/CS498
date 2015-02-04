@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using CS498.Lib;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Calendar = CS498.Lib.MyCalendar;
@@ -103,11 +102,12 @@ namespace CS498
         {
 
             if (GoogleDate == null || GoogleDate.SelectedValue == null) return;
-            var googleDate = Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue);
+            var googleDate = (TimeBlockChoices)(Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue));
             var hoursMinutes = GetHourMinute();
             if (DateTimePicker.Value == null) return;
             var timeEnd = DateTimePicker.Value.Value;
-            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTime(hoursMinutes.Item1, hoursMinutes.Item2, timeEnd, (TimeBlockChoices)googleDate);
+            var timeSpan = new TimeSpan(hoursMinutes.Item1, hoursMinutes.Item2, 0);
+            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
         }
 
         private async void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -142,7 +142,8 @@ namespace CS498
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _timeBlock;
-            Calendar.ItemsSource = MyCalendar.Instance.GetAllIds().Result;
+            var ids = await MyCalendar.Instance.GetAllIds();
+            Calendar.ItemsSource = ids.Values.OrderBy(x => x).ToList();
             Calendar.SelectedValue = MyCalendar.Instance.GetIdName();
         }
     }
