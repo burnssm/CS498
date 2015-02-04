@@ -71,7 +71,7 @@ namespace CS498
                     Description = description
                 };
 
-                MyCalendar.Instance.AddEvent(newEvent);
+                await MyCalendar.Instance.AddEvent(newEvent);
                 _events = await MyCalendar.Instance.GetTasks();
             }
             else

@@ -65,6 +65,8 @@ namespace CS498.Lib
                 
             }
             await GetAllOwnedCalendars();
+            await GetTasks();
+            GetFreeTime();
         }
 
         public async Task<ObservableCollection<GoogleEvent>> GetTasks()
@@ -80,7 +82,7 @@ namespace CS498.Lib
 
             foreach (var events in request.Items.Where(events => events.End.DateTime.GetValueOrDefault() > DateTime.Now))
             {
-                _tasks.Add(new GoogleEvent
+                _tasks.Add(new GoogleEvent(events.Id)
                 {
                     Title = events.Summary,
                     Description = events.Description,
@@ -136,8 +138,9 @@ namespace CS498.Lib
             }
         }
 
-        public async void AddEvent(GoogleEvent gEvent)
+        public async Task AddEvent(GoogleEvent gEvent)
         {
+            if(gEvent.TimeBlock == null) throw new ArgumentNullException("gEvent", "The Time block can not be null");
             var calendarEvent = new Event
             {
                 Summary = gEvent.Title,
@@ -150,11 +153,12 @@ namespace CS498.Lib
                 End = new EventDateTime
                 {
                     DateTime = gEvent.TimeBlock.End,
-                }
+                },
+                Id = gEvent.Id
             };
             await _service.Events.Insert(calendarEvent, _primaryId).ExecuteAsync();
-
-            var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.End);
+            
+            var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.Start);
             _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
         }
         public async Task<Dictionary<string, string>> GetAllIds()
@@ -164,6 +168,10 @@ namespace CS498.Lib
             return _calendarIds;
         }
 
+        public async Task DeleteEvent(GoogleEvent gEvent)
+        {
+            await _service.Events.Delete(_primaryId, gEvent.Id).ExecuteAsync();
+        }
         public void SetPrimaryId(string id)
         {
             _primaryId = id;
