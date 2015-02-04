@@ -153,8 +153,8 @@ namespace CS498.Lib
             };
             await _service.Events.Insert(calendarEvent, _primaryId).ExecuteAsync();
 
-            var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.End);
-            _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
+            var googleEvent = _tasks.Last(x => x.TimeBlock.Start <= gEvent.TimeBlock.End);
+            _tasks.Insert(_tasks.IndexOf(googleEvent) + 1, gEvent);
         }
         public async Task<Dictionary<string, string>> GetAllIds()
         {
