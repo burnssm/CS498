@@ -3,9 +3,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
-        Title="MainWindow" Height="499" Width="939">
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:CS498.Lib;assembly=CS498.Lib"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="499" Width="939"
+        Loaded="MainWindow_OnLoaded">
 
+    <Window.Resources>
+        <ObjectDataProvider x:Key="TimeblockChoices" 
+                        MethodName="GetNames" ObjectType="{x:Type system:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="sys:TimeBlockChoices" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="24" />
@@ -44,11 +56,10 @@
                         <Grid Grid.Column="0" Grid.Row="0">
                             <Label HorizontalAlignment="Center">Task List</Label>
                         </Grid>
-                        <ComboBox Name="TaskDates"  Grid.Row="1" Margin="8px"/>
+                        <ComboBox Name="Calendar"  Grid.Row="1" Margin="8px" SelectionChanged="Calendar_OnSelectionChanged"/>
                         <Grid Grid.Column="0" Grid.Row="2">
                             <ListBox Name ="TaskList" BorderThickness="0"
-                                ScrollViewer.VerticalScrollBarVisibility="Visible"
-                                HorizontalContentAlignment="Stretch" >
+                                ScrollViewer.VerticalScrollBarVisibility="Visible">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -71,9 +82,9 @@
                     <DockPanel Height="Auto">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="10*" />
                                 <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="6*"/>
                             </Grid.ColumnDefinitions>
                             <Grid Margin="0,0,0,0" Row="0" >
                                 <Grid.ColumnDefinitions>
@@ -88,6 +99,8 @@
                                     <RowDefinition Height="26"/>
                                     <RowDefinition Height="16"/>
                                     <RowDefinition Height="40"/>
+                                    <RowDefinition Height="16"/>
+                                    <RowDefinition Height="26"/>
                                     <RowDefinition Height="16"/>
                                     <RowDefinition Height="26"/>
                                     <RowDefinition Height="*"/>
@@ -106,40 +119,48 @@
                                         Grid.ColumnSpan="2"
                                         Name="DateTimePicker"
 		                                Margin="0,0,0,10"
-		                                VerticalAlignment="Bottom"/>
+		                                VerticalAlignment="Bottom"
+                                        ValueChanged="DateTimePicker_OnValueChanged"/>
 
                                 <Label Grid.Column="0" Grid.Row="7" Content="Time Needed" />
-                                <xctk:IntegerUpDown Name="Hours" Grid.Row ="7" Grid.Column="1"  Minimum="0"/>
-                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15"/>
+                                <xctk:IntegerUpDown Name="Hours" Grid.Row ="7" Grid.Column="1"  Minimum="0" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
+                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
 
-                                <Button Grid.Column="0" Grid.Row="9" Grid.ColumnSpan="3" Content="Save" Width="200" Margin="8px"></Button>
+
+                                <Label Grid.Column="0" Grid.Row="9" Content="Time Block" Visibility="Hidden"/>
+                                <xctk:IntegerUpDown Name="PossibleHours" Grid.Row ="9" Grid.Column="1"  Minimum="0" Value="0" Visibility="Hidden"/>
+                                <xctk:IntegerUpDown Name="PossibleMinutes"  Grid.Row ="9" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0" Visibility="Hidden"/>
+
+                                <Button Grid.Column="1" Grid.Row="11"  Content="Save"  Margin="8px" Click="Save_OnClick"/>
+                                <Button Grid.Column="2" Grid.Row="11" Content="Cancel"  Margin="8px" Click="Cancel_OnClick"/>
                             </Grid>
 
                             <Grid Column="2">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="6"/>
+                                    <RowDefinition Height="20"/>
                                     <RowDefinition Height="40"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <Label Grid.Row="0" Content="Google Integration" HorizontalAlignment="Center"/>
-                                <ComboBox Name="GoogleDate" Grid.Row="1" Margin="8px"/>
+                                <Label Grid.Row="0" Content="Google Integration" HorizontalAlignment="Center" Margin="47,0" Grid.RowSpan="2"/>
+                                <ComboBox Name="GoogleDate" Grid.Row="2" Margin="8px" SelectionChanged="GoogleDate_OnSelectionChanged" ItemsSource="{Binding Source={StaticResource TimeblockChoices}}"/>
 
                                 <ListBox Name ="GoogleList" BorderThickness="0"
                                     ScrollViewer.VerticalScrollBarVisibility="Visible"
                                     HorizontalContentAlignment="Stretch"
-                                    Grid.Row="2">
+                                    Grid.Row="2" Margin="0,37,0,3" Grid.RowSpan="2">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="20" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <CheckBox Name="CheckBox" Grid.Column="0" VerticalAlignment="Center"/>
-                                                <Label Content="{Binding Display}" Grid.Column="1" Padding="16px"
-                                                    VerticalAlignment="Center"/>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+                                                <Label Content="{Binding Date}" Grid.Row="0"
+                                                    HorizontalAlignment="Left"/>
+                                                <Label Content="{Binding Time}" Grid.Row="1" Padding="16, 0, 0, 8"
+                                                    HorizontalAlignment="Left"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
