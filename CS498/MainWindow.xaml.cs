@@ -38,7 +38,7 @@ namespace CS498
                 }
             }
 
-            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+            _events = await MyCalendar.Instance.GetTasks();
             _timeBlock = new ObservableCollection<TimeBlock>();
 
             TaskList.ItemsSource = _events;
@@ -50,16 +50,20 @@ namespace CS498
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
         {
+
             var taskName = TaskName.Text;
-            var description = Description.Text;
+            var selectedTimeBlock = (TimeBlock) GoogleList.SelectedItem;
 
-            var selectedTimeBlock = (TimeBlock)GoogleList.SelectedItem;
+            var formDirty = string.IsNullOrWhiteSpace(taskName) || selectedTimeBlock == null;
 
-            var hour = Hours.Value ?? 0;
-            var minutes = Minutes.Value ?? 0;
-
-            if (selectedTimeBlock != null)
+            if (!formDirty)
             {
+
+                var description = Description.Text;
+
+                var hour = Hours.Value ?? 0;
+                var minutes = Minutes.Value ?? 0;
+
                 var newEvent = new GoogleEvent
                 {
                     Title = taskName,
@@ -68,7 +72,7 @@ namespace CS498
                 };
 
                 MyCalendar.Instance.AddEvent(newEvent);
-                _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+                _events = await MyCalendar.Instance.GetTasks();
             }
             else
             {
@@ -88,7 +92,6 @@ namespace CS498
 
         private void ClearForm()
         {
-
             TaskName.Clear();
             Description.Text = "";
             DateTimePicker.Text = "";
@@ -97,6 +100,7 @@ namespace CS498
             Hours.Value = 0;
             Minutes.Value = 0;
         }
+
         private void GoogleDate_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateTimeBlock();
@@ -145,7 +149,13 @@ namespace CS498
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
             MyCalendar.Instance.SetPrimaryId(id);
-            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+            _events = await MyCalendar.Instance.GetTasks();
+        }
+
+        private void GoogleList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //var selectedTimeBlock = e.AddedItems[0] as TimeBlock;
+
         }
     }
 }

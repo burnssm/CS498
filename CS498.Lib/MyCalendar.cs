@@ -23,6 +23,7 @@ namespace CS498.Lib
         private static CalendarService _service;
         private string _primaryId;
         private Dictionary<string, string> _calendarIds;
+
         private const string PrimaryId = "PrimaryId";
         private const TimeBlockChoices LengthOfTimeToDisplay = TimeBlockChoices.TwoWeeks;
 
@@ -66,7 +67,7 @@ namespace CS498.Lib
             await GetAllOwnedCalendars();
         }
 
-        public async Task<ObservableCollection<GoogleEvent>> GetTasks(string id)
+        public async Task<ObservableCollection<GoogleEvent>> GetTasks()
         {
             _tasks.Clear();
             var endTime = DateTime.Now.AddDays((double)LengthOfTimeToDisplay);
