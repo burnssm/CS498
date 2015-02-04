@@ -23,7 +23,6 @@ namespace CS498.Lib
         private static CalendarService _service;
         private string _primaryId;
         private Dictionary<string, string> _calendarIds;
-
         private const string PrimaryId = "PrimaryId";
         private const TimeBlockChoices LengthOfTimeToDisplay = TimeBlockChoices.TwoWeeks;
 
@@ -157,7 +156,6 @@ namespace CS498.Lib
             var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.End);
             _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
         }
-
         public async Task<Dictionary<string, string>> GetAllIds()
         {
             if (_calendarIds == null)
