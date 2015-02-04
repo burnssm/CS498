@@ -9,13 +9,13 @@ namespace CS498.Lib
 {
     public enum TimeBlockChoices
     {
-        [Description("Today")]
+        [Description("Next 24 Hours")]
         Today = 1,
-        [Description("Tomorrow")]
+        [Description("Next 48 Hours")]
         Tomorrow = 2,
-        [Description("Full Week")]
+        [Description("Next Full Week")]
         FullWeek = 7,
-        [Description("Two Weeks")]
+        [Description("Next Two Weeks")]
         TwoWeeks = 14
     }
 }

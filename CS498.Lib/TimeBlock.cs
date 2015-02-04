@@ -7,6 +7,11 @@ namespace CS498.Lib
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
 
+        public TimeSpan Duration
+        {
+            get { return End.Subtract(Start); }
+        }
+
         public TimeBlock(DateTime start, DateTime end)
         {
             Start = start;
@@ -14,7 +19,7 @@ namespace CS498.Lib
         }
         public override string ToString()
         {
-            return Start.ToString("t") + " - " + End.ToString("t");
+            return Start.ToString("M") + "      "+ Start.ToString("t") + " - " + End.ToString("t");
         }
 
         public string Date
