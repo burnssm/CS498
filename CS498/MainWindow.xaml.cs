@@ -38,14 +38,15 @@ namespace CS498
                 }
             }
 
-            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
-            _timeBlock = new ObservableCollection<TimeBlock>();
+            _events = MyCalendar.Instance.GetTaskEvents();
+            _timeBlock = MyCalendar.Instance.GetFreeTimeBlocks();
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _timeBlock;
             _calendarIds = await MyCalendar.Instance.GetAllIds();
             Calendar.ItemsSource = _calendarIds.Values;
             Calendar.SelectedValue = MyCalendar.Instance.GetIdName();
+            GoogleDate.SelectedValue = MyCalendar.Instance.GetDefaultTimeBlockChoice().ToString();
         }
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
@@ -68,7 +69,8 @@ namespace CS498
                 };
 
                 MyCalendar.Instance.AddEvent(newEvent);
-                _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+                var calendar = await MyCalendar.Instance.GetTasks();
+                _events = calendar;
             }
             else
             {
@@ -105,6 +107,28 @@ namespace CS498
         private void HoursOrMinutes_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             UpdateTimeBlock();
+
+
+            if (StartTime != null && StartTime.Value != null && GoogleList.SelectedValue != null)
+            {
+                var selectedItemEnd = ((TimeBlock)GoogleList.SelectedValue).End;
+                var startTime = (DateTime)StartTime.Value;
+
+                var minute = Minutes.Value;
+                var hour = Hours.Value;
+
+                var newTime = startTime.AddHours((double) hour).AddMinutes((double) minute);
+
+
+                if (newTime < selectedItemEnd)
+                {
+                    EndTime.Content = newTime.ToString("T");
+                }
+                else
+                {
+                    GoogleList.SelectedIndex = -1;
+                }
+            }
         }
         private void DateTimePicker_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
@@ -117,8 +141,12 @@ namespace CS498
             if (GoogleDate == null || GoogleDate.SelectedValue == null) return;
             var googleDate = (TimeBlockChoices)(Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue));
             var hoursMinutes = GetHourMinute();
-            if (DateTimePicker.Value == null) return;
-            var timeEnd = DateTimePicker.Value.Value;
+            DateTime timeEnd = DateTime.MaxValue;
+            if (DateTimePicker.Value != null)
+            {
+                 timeEnd = DateTimePicker.Value.Value;
+                
+            }
             var timeSpan = new TimeSpan(hoursMinutes.Item1, hoursMinutes.Item2, 0);
             GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
         }
@@ -144,8 +172,56 @@ namespace CS498
 
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
-            MyCalendar.Instance.SetPrimaryId(id);
-            _events = await MyCalendar.Instance.GetTasks(MyCalendar.Instance.GetIdName());
+            await MyCalendar.Instance.UpdateTasksBasedOnNewId(id);
+
+            if (e.RemovedItems.Count == 0) return;
+            var tasks = await MyCalendar.Instance.GetTasks();
+            _timeBlock = MyCalendar.Instance.GetFreeTimeBlocks();
+            _events = tasks;
+        }
+
+        private void ChangeVisibility(bool visibility)
+        {
+            var visibilityAttribute = visibility ? Visibility.Visible : Visibility.Hidden;
+            StartTimeLabel.Visibility = visibilityAttribute;
+            StartTime.Visibility = visibilityAttribute;
+            EndTime.Visibility = visibilityAttribute;
+
+        }
+
+        private void GoogleList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count <= 0)
+            {
+                ChangeVisibility(false);
+                return;
+            }
+
+            var possibleTimeBlock = e.AddedItems[0] as TimeBlock;
+
+            if (possibleTimeBlock == null) return;
+            ChangeVisibility(true);
+            var minute = Minutes.Value;
+            var hour = Hours.Value;
+
+            StartTime.Maximum = null;
+            StartTime.Minimum = null;
+
+            StartTime.Maximum = possibleTimeBlock.End.AddHours((double)-hour).AddMinutes((double)-minute);
+            StartTime.Value = possibleTimeBlock.Start;
+            StartTime.Minimum = possibleTimeBlock.Start;
+
+        }
+
+        private void StartTime_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            var newValue = (DateTime)e.NewValue;
+
+            var minute = Minutes.Value;
+            var hour = Hours.Value;
+
+            if (hour != null && minute != null)
+                EndTime.Content = newValue.AddHours((double) hour).AddMinutes((double) minute).ToString("T");
         }
     }
 }

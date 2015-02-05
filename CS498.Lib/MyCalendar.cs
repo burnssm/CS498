@@ -23,6 +23,7 @@ namespace CS498.Lib
         private static CalendarService _service;
         private string _primaryId;
         private Dictionary<string, string> _calendarIds;
+
         private const string PrimaryId = "PrimaryId";
         private const TimeBlockChoices LengthOfTimeToDisplay = TimeBlockChoices.TwoWeeks;
 
@@ -60,13 +61,13 @@ namespace CS498.Lib
             if (settingsProperty != null && _primaryId.Equals((string)settingsProperty.DefaultValue))
             {
                 var calendar = await _service.Calendars.Get(_primaryId).ExecuteAsync();
-                SetPrimaryId(calendar.Id);
+                await UpdateTasksBasedOnNewId(calendar.Id);
                 
             }
-            await GetAllOwnedCalendars();
+            await GetTasks();
         }
 
-        public async Task<ObservableCollection<GoogleEvent>> GetTasks(string id)
+        public async Task<ObservableCollection<GoogleEvent>> GetTasks()
         {
             _tasks.Clear();
             var endTime = DateTime.Now.AddDays((double)LengthOfTimeToDisplay);
@@ -117,7 +118,11 @@ namespace CS498.Lib
                                     .Select(x => new TimeBlock(x.Start, end))
                                     .ToList();
             return new ObservableCollection<TimeBlock>(_freeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock));
-        } 
+        }
+        public ObservableCollection<TimeBlock> GetFreeTimeBlocks()
+        {
+            return _freeTime;
+        }
 
         private async Task GetAllOwnedCalendars()
         {
@@ -163,7 +168,12 @@ namespace CS498.Lib
             return _calendarIds;
         }
 
-        public void SetPrimaryId(string id)
+        public ObservableCollection<GoogleEvent> GetTaskEvents()
+        {
+            return _tasks;
+        } 
+
+        public async Task UpdateTasksBasedOnNewId(string id)
         {
             _primaryId = id;
             Settings.Default[PrimaryId] = id;
@@ -172,6 +182,11 @@ namespace CS498.Lib
         public string GetIdName()
         {
             return _calendarIds[_primaryId];
+        }
+
+        public TimeBlockChoices GetDefaultTimeBlockChoice()
+        {
+            return LengthOfTimeToDisplay;
         }
     }
 }

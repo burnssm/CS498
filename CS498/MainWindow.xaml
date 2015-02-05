@@ -102,7 +102,7 @@
                                     <RowDefinition Height="16"/>
                                     <RowDefinition Height="26"/>
                                     <RowDefinition Height="16"/>
-                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="40"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="40"/>
                                 </Grid.RowDefinitions>
@@ -113,7 +113,7 @@
                                 <Label Grid.Column="0" Grid.Row="3" Content="Description" />
                                 <xctk:MultiLineTextEditor Name="Description" Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2"/>
 
-                                <Label Grid.Column="0" Grid.Row="5" Content="Due Date" />
+                                <Label Grid.Column="0" Grid.Row="5" Content="Due Date" VerticalContentAlignment="Center"/>
                                 <xctk:DateTimePicker Grid.Column="1"
                                         Grid.Row="5"
                                         Grid.ColumnSpan="2"
@@ -124,13 +124,20 @@
 
                                 <Label Grid.Column="0" Grid.Row="7" Content="Time Needed" />
                                 <xctk:IntegerUpDown Name="Hours" Grid.Row ="7" Grid.Column="1"  Minimum="0" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
-                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0" ValueChanged="HoursOrMinutes_OnValueChanged"/>
+                                <xctk:IntegerUpDown Name="Minutes"  Grid.Row ="7" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="15" ValueChanged="HoursOrMinutes_OnValueChanged"/>
 
 
-                                <Label Grid.Column="0" Grid.Row="9" Content="Time Block" Visibility="Hidden"/>
-                                <xctk:IntegerUpDown Name="PossibleHours" Grid.Row ="9" Grid.Column="1"  Minimum="0" Value="0" Visibility="Hidden"/>
-                                <xctk:IntegerUpDown Name="PossibleMinutes"  Grid.Row ="9" Grid.Column="2"  Maximum="45" Minimum="0" Increment="15" Value="0" Visibility="Hidden"/>
-
+                                <Label Grid.Column="0" Grid.Row="9" Content="Start Time" Visibility="Hidden" Name ="StartTimeLabel" VerticalContentAlignment="Center"/>
+                                <xctk:DateTimePicker Grid.Column="1"
+                                        Grid.Row="9"
+                                        Name = "StartTime"
+		                                VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        Format="ShortTime"
+                                        Visibility="Hidden"
+                                        ValueChanged="StartTime_OnValueChanged"/>
+                                <Label Grid.Column="2" Grid.Row="9" Visibility="Hidden" Name ="EndTime" VerticalContentAlignment="Center"/>
+                                
                                 <Button Grid.Column="1" Grid.Row="11"  Content="Save"  Margin="8px" Click="Save_OnClick"/>
                                 <Button Grid.Column="2" Grid.Row="11" Content="Cancel"  Margin="8px" Click="Cancel_OnClick"/>
                             </Grid>
@@ -149,7 +156,8 @@
                                 <ListBox Name ="GoogleList" BorderThickness="0"
                                     ScrollViewer.VerticalScrollBarVisibility="Visible"
                                     HorizontalContentAlignment="Stretch"
-                                    Grid.Row="2" Margin="0,37,0,3" Grid.RowSpan="2">
+                                    Grid.Row="2" Margin="0,37,0,3" Grid.RowSpan="2"
+                                         SelectionChanged="GoogleList_OnSelectionChanged">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Grid>
