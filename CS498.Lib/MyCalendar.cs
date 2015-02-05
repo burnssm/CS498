@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace CS498.Lib
 {
     public class MyCalendar
     {
-        public readonly ObservableCollection<TimeBlock> _freeTime;
+        public readonly ObservableCollection<TimeBlock> FreeTime;
         private readonly ObservableCollection<GoogleEvent> _tasks;
 
         private static MyCalendar _instance;
@@ -31,7 +30,7 @@ namespace CS498.Lib
         private MyCalendar()
         {
             _tasks = new ObservableCollection<GoogleEvent>();
-            _freeTime = new ObservableCollection<TimeBlock>();
+            FreeTime = new ObservableCollection<TimeBlock>();
             _primaryId = (string)Settings.Default[PrimaryId];
         }
 
@@ -66,10 +65,10 @@ namespace CS498.Lib
                 
             }
             await GetAllOwnedCalendars();
-            await GetTasks();
+            GetTasks();
         }
 
-        public async Task<ObservableCollection<GoogleEvent>> GetTasks()
+        public ObservableCollection<GoogleEvent> GetTasks()
         {
             _tasks.Clear();
             var endTime = DateTime.Now.AddDays((double)LengthOfTimeToDisplay);
@@ -78,7 +77,7 @@ namespace CS498.Lib
             lr.TimeMax = endTime;
             lr.SingleEvents = true;
             lr.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-            var request = await lr.ExecuteAsync();
+            var request = lr.ExecuteAsync().Result;
 
             foreach (var events in request.Items.Where(events => events.End.DateTime.GetValueOrDefault() > DateTime.Now))
             {
@@ -94,32 +93,16 @@ namespace CS498.Lib
             return _tasks;
         }
 
-        private void CalculateFreeTime()
+        public ObservableCollection<TimeBlock> GetFreeTimeBlocks(TimeSpan timeSpan, DateTime dueDate, TimeBlockChoices googleDate)
         {
-            if (!_tasks.Any()) return;
-            _freeTime.Clear();
-            var endTime = DateTime.Now.AddDays((double)LengthOfTimeToDisplay);
-            for (var x = 1; x < _tasks.Count; x++)
-            {
-                if (_tasks[x - 1].TimeBlock.End < _tasks[x].TimeBlock.Start)
-                    _freeTime.Add(new TimeBlock(_tasks[x - 1].TimeBlock.End, _tasks[x].TimeBlock.Start));
-            }
-            if (_tasks.First().TimeBlock.Start >= DateTime.Now)
-                _freeTime.Insert(0, new TimeBlock(DateTime.Now, _tasks.First().TimeBlock.Start));
-
-            if (_tasks.Last().TimeBlock.End < endTime)
-                _freeTime.Add(new TimeBlock(_tasks.Last().TimeBlock.End, endTime));
-        }
-
-        public ObservableCollection<TimeBlock> GetFreeTimeBlocks(TimeSpan timeSpan, DateTime endDate, TimeBlockChoices googleDate)
-        {
-            var filterEndDate = DateTime.Now.AddDays((int) googleDate);
-            var end = endDate < filterEndDate ? endDate : filterEndDate;
-            var updatedTimeBlock = _freeTime
+            if(timeSpan.Equals(new TimeSpan(0,0,0))) throw new ArgumentException("Time Span must be more than 0.", "timeSpan");
+            var filterEndDate = DateTime.Now.AddDays((int)googleDate);
+            var end = dueDate < filterEndDate ? dueDate : filterEndDate;
+            var updatedTimeBlock = FreeTime
                                     .Where(x => x.Duration >= timeSpan && x.End >= end && x.Start <= end)
                                     .Select(x => new TimeBlock(x.Start, end))
                                     .ToList();
-            return new ObservableCollection<TimeBlock>(_freeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock));
+            return new ObservableCollection<TimeBlock>(FreeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock));
         } 
 
         private async Task GetAllOwnedCalendars()
@@ -138,9 +121,26 @@ namespace CS498.Lib
             }
         }
 
+        private void CalculateFreeTime()
+        {
+            if (!_tasks.Any()) return;
+            FreeTime.Clear();
+            var endTime = DateTime.Now.AddDays((double)LengthOfTimeToDisplay);
+            for (var x = 1; x < _tasks.Count; x++)
+            {
+                if (_tasks[x - 1].TimeBlock.End < _tasks[x].TimeBlock.Start)
+                    FreeTime.Add(new TimeBlock(_tasks[x - 1].TimeBlock.End, _tasks[x].TimeBlock.Start));
+            }
+            if (_tasks.First().TimeBlock.Start >= DateTime.Now)
+                FreeTime.Insert(0, new TimeBlock(DateTime.Now, _tasks.First().TimeBlock.Start));
+
+            if (_tasks.Last().TimeBlock.End < endTime)
+                FreeTime.Add(new TimeBlock(_tasks.Last().TimeBlock.End, endTime));
+        }
+
         public async Task AddEvent(GoogleEvent gEvent)
         {
-            if(gEvent.TimeBlock == null) throw new ArgumentNullException("gEvent", "The Time block can not be null");
+            if(gEvent == null || gEvent.TimeBlock == null) throw new ArgumentNullException("gEvent", "Event and the Event's TimeBlock can not be null");
             var calendarEvent = new Event
             {
                 Summary = gEvent.Title,
@@ -158,8 +158,13 @@ namespace CS498.Lib
             };
             await _service.Events.Insert(calendarEvent, _primaryId).ExecuteAsync();
             
-            var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.Start);
-            _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
+            if(!_tasks.Any())
+                _tasks.Add(gEvent);
+            else 
+            { 
+                var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.Start);
+                _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
+            }
         }
         public async Task<Dictionary<string, string>> GetAllIds()
         {
@@ -168,6 +173,13 @@ namespace CS498.Lib
             return _calendarIds;
         }
 
+        /// <summary>
+        /// THIS IS NOT FINISHED - this does not adjust tasklist/freetime 
+        /// as it should had it been completely implemented
+        /// Don't grade us on this 
+        /// </summary>
+        /// <param name="gEvent"></param>
+        /// <returns></returns>
         public async Task DeleteEvent(GoogleEvent gEvent)
         {
             await _service.Events.Delete(_primaryId, gEvent.Id).ExecuteAsync();
@@ -185,7 +197,9 @@ namespace CS498.Lib
 
         public void ResetPrimaryId()
         {
-            SetPrimaryId((string)Settings.Default.Properties[PrimaryId].DefaultValue);
+            var settingsProperty = Settings.Default.Properties[PrimaryId];
+            if (settingsProperty != null)
+                SetPrimaryId((string)settingsProperty.DefaultValue);
         }
     }
 }

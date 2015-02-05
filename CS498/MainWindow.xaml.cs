@@ -38,7 +38,7 @@ namespace CS498
                 }
             }
 
-            _events = await MyCalendar.Instance.GetTasks();
+            _events = MyCalendar.Instance.GetTasks();
             _timeBlock = new ObservableCollection<TimeBlock>();
 
             TaskList.ItemsSource = _events;
@@ -72,7 +72,7 @@ namespace CS498
                 };
 
                 await MyCalendar.Instance.AddEvent(newEvent);
-                _events = await MyCalendar.Instance.GetTasks();
+                _events = MyCalendar.Instance.GetTasks();
             }
             else
             {
@@ -149,7 +149,7 @@ namespace CS498
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
             MyCalendar.Instance.SetPrimaryId(id);
-            _events = await MyCalendar.Instance.GetTasks();
+            _events = MyCalendar.Instance.GetTasks();
         }
 
         private void GoogleList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
