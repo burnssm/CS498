@@ -58,6 +58,7 @@ namespace CS498.Lib
                 ApplicationName = "Calendar API Sample"
             });
 
+            await GetAllOwnedCalendars();
             var settingsProperty = Settings.Default.Properties[PrimaryId];
             if (settingsProperty != null && _primaryId.Equals((string)settingsProperty.DefaultValue))
             {
@@ -65,7 +66,6 @@ namespace CS498.Lib
                 SetPrimaryId(calendar.Id);
                 
             }
-            await GetAllOwnedCalendars();
             GetTasks();
         }
 
