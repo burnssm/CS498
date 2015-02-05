@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace CS498.Lib
 {
     public class MyCalendar
     {
-        private readonly ObservableCollection<TimeBlock> _freeTime;
+        public readonly ObservableCollection<TimeBlock> _freeTime;
         private readonly ObservableCollection<GoogleEvent> _tasks;
 
         private static MyCalendar _instance;
@@ -66,7 +67,6 @@ namespace CS498.Lib
             }
             await GetAllOwnedCalendars();
             await GetTasks();
-            GetFreeTime();
         }
 
         public async Task<ObservableCollection<GoogleEvent>> GetTasks()
@@ -90,11 +90,11 @@ namespace CS498.Lib
                     Location = events.Location
                 });
             }
-            GetFreeTime();
+            CalculateFreeTime();
             return _tasks;
         }
 
-        public void GetFreeTime()
+        private void CalculateFreeTime()
         {
             if (!_tasks.Any()) return;
             _freeTime.Clear();
@@ -181,6 +181,11 @@ namespace CS498.Lib
         public string GetIdName()
         {
             return _calendarIds[_primaryId];
+        }
+
+        public void ResetPrimaryId()
+        {
+            SetPrimaryId((string)Settings.Default.Properties[PrimaryId].DefaultValue);
         }
     }
 }
