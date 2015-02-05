@@ -51,16 +51,20 @@ namespace CS498
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
         {
+
             var taskName = TaskName.Text;
-            var description = Description.Text;
+            var selectedTimeBlock = (TimeBlock) GoogleList.SelectedItem;
 
-            var selectedTimeBlock = (TimeBlock)GoogleList.SelectedItem;
+            var formDirty = string.IsNullOrWhiteSpace(taskName) || selectedTimeBlock == null;
 
-            var hour = Hours.Value ?? 0;
-            var minutes = Minutes.Value ?? 0;
-
-            if (selectedTimeBlock != null)
+            if (!formDirty)
             {
+
+                var description = Description.Text;
+
+                var hour = Hours.Value ?? 0;
+                var minutes = Minutes.Value ?? 0;
+
                 var newEvent = new GoogleEvent
                 {
                     Title = taskName,
@@ -68,9 +72,8 @@ namespace CS498
                     Description = description
                 };
 
-                MyCalendar.Instance.AddEvent(newEvent);
-                var calendar = await MyCalendar.Instance.GetTasks();
-                _events = calendar;
+                await MyCalendar.Instance.AddEvent(newEvent);
+                _events = MyCalendar.Instance.GetTasks();
             }
             else
             {
@@ -90,15 +93,15 @@ namespace CS498
 
         private void ClearForm()
         {
-
             TaskName.Clear();
             Description.Text = "";
             DateTimePicker.Text = "";
             GoogleList.ItemsSource = null;
             GoogleList.UnselectAll();
             Hours.Value = 0;
-            Minutes.Value = 0;
+            Minutes.Value = 15;
         }
+
         private void GoogleDate_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateTimeBlock();
@@ -106,6 +109,12 @@ namespace CS498
 
         private void HoursOrMinutes_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
+            if (Minutes == null || Hours == null || Minutes.Value == null || Hours.Value == null) return;
+
+            var minute = Minutes.Value ?? 0;
+            var hour = Hours.Value?? 0;
+
+            if (hour == 0 && minute == 0) return;
             UpdateTimeBlock();
 
 
@@ -114,10 +123,8 @@ namespace CS498
                 var selectedItemEnd = ((TimeBlock)GoogleList.SelectedValue).End;
                 var startTime = (DateTime)StartTime.Value;
 
-                var minute = Minutes.Value;
-                var hour = Hours.Value;
 
-                var newTime = startTime.AddHours((double) hour).AddMinutes((double) minute);
+                var newTime = startTime.AddHours(hour).AddMinutes(minute);
 
 
                 if (newTime < selectedItemEnd)
@@ -166,18 +173,17 @@ namespace CS498
             return new Tuple<int, int>(hour, minutes);
         }
 
-        private async void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var calendar = e.AddedItems[0] as string;
 
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
-            await MyCalendar.Instance.UpdateTasksBasedOnNewId(id);
+            MyCalendar.Instance.SetPrimaryId(id);
 
             if (e.RemovedItems.Count == 0) return;
-            var tasks = await MyCalendar.Instance.GetTasks();
             _timeBlock = MyCalendar.Instance.GetFreeTimeBlocks();
-            _events = tasks;
+            _events = MyCalendar.Instance.GetTasks();
         }
 
         private void ChangeVisibility(bool visibility)
@@ -207,9 +213,13 @@ namespace CS498
             StartTime.Maximum = null;
             StartTime.Minimum = null;
 
-            StartTime.Maximum = possibleTimeBlock.End.AddHours((double)-hour).AddMinutes((double)-minute);
-            StartTime.Value = possibleTimeBlock.Start;
-            StartTime.Minimum = possibleTimeBlock.Start;
+            var newMax = possibleTimeBlock.End.AddHours((double) -hour).AddMinutes((double) -minute);
+            var newMin = possibleTimeBlock.Start;
+
+
+            StartTime.Value = newMin;
+            StartTime.Maximum = newMax;
+            StartTime.Minimum = newMin;
 
         }
 
