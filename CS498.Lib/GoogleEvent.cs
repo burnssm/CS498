@@ -1,7 +1,4 @@
-﻿
-using System;
-using System.Data.Common;
-using Google.Apis.Auth.OAuth2.Flows;
+﻿using System;
 
 namespace CS498.Lib
 {
@@ -20,7 +17,7 @@ namespace CS498.Lib
 
         public GoogleEvent()
         {
-            Initialize(Guid.NewGuid().ToString().Replace('-','a'));
+            Initialize(Guid.NewGuid().ToString().Replace("-",""));
         }
 
         private void Initialize(string id)
