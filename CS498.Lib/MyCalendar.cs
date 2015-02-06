@@ -70,7 +70,7 @@ namespace CS498.Lib
         /// as it should - had it been completely implemented
         /// Don't grade us on this 
         /// </summary>
-        public async Task DeleteEventFromCalendarAsync(string id, Event deletedEvent)
+        public async Task DeleteEventFromCalendarAsync(string id, GoogleEvent deletedEvent)
         {
             var service = await GetService();
             await service.Events.Delete(id, deletedEvent.Id).ExecuteAsync();
