@@ -17,34 +17,24 @@ namespace CS498
     {
         private ObservableCollection<GoogleEvent> _events;
         private ObservableCollection<TimeBlock> _timeBlock;
-        private Dictionary<string, string> _calendarIds; 
+        private Dictionary<string, string> _calendarIds;
+        private CalendarController calendarController;
 
         public MainWindow()
         {
             InitializeComponent();
+            calendarController = new CalendarController();
         }
 
         private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await MyCalendar.Instance.Authorize();
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var ie in ex.InnerExceptions)
-                {
-                    Console.WriteLine("ERROR: " + ie.Message);
-                }
-            }
-
-            _events = MyCalendar.Instance.GetTaskEvents();
+            _events = await calendarController.GetTasks();
+            _calendarIds = await calendarController.GetCalendarIds();
+            Calendar.SelectedValue = calendarController.GetIdName();
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _timeBlock;
-            _calendarIds = await MyCalendar.Instance.GetAllIds();
             Calendar.ItemsSource = _calendarIds.Values;
-            Calendar.SelectedValue = MyCalendar.Instance.GetIdName();
         }
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
@@ -74,9 +64,8 @@ namespace CS498
                     Location = location
                 };
 
-                await MyCalendar.Instance.AddEvent(newEvent);
-                _events = MyCalendar.Instance.GetTaskEvents();
-                _timeBlock = MyCalendar.Instance.GetFreeTime();
+                await calendarController.AddEvent(newEvent);
+                _timeBlock = calendarController.GetFreeTime();
                 ClearForm();
             }
             else
@@ -158,7 +147,7 @@ namespace CS498
                 
             }
             var timeSpan = new TimeSpan(hoursMinutes.Item1, hoursMinutes.Item2, 0);
-            GoogleList.ItemsSource = MyCalendar.Instance.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
+            GoogleList.ItemsSource = calendarController.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
         }
 
         private Tuple<int, int> GetHourMinute()
@@ -196,17 +185,17 @@ namespace CS498
             StartTime.Minimum = newMin;
         }
 
-        private void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var calendar = e.AddedItems[0] as string;
 
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
-            MyCalendar.Instance.SetPrimaryId(id);
+            await calendarController.SetPrimaryId(id);
 
             if (e.RemovedItems.Count == 0) return;
-            _timeBlock = MyCalendar.Instance.GetFreeTimeBlocks();
-            _events = MyCalendar.Instance.GetTasks();
+            _events = await calendarController.GetTasks();
+            _timeBlock = calendarController.GetFreeTime();
         }
 
         private void ChangeVisibility(bool visibility)
