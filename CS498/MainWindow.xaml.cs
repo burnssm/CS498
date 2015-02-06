@@ -75,7 +75,8 @@ namespace CS498
                 };
 
                 await MyCalendar.Instance.AddEvent(newEvent);
-                _events = MyCalendar.Instance.GetTasks();
+                _events = MyCalendar.Instance.GetTaskEvents();
+                _timeBlock = MyCalendar.Instance.GetFreeTime();
                 ClearForm();
             }
             else

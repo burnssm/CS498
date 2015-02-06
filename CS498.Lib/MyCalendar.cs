@@ -165,10 +165,20 @@ namespace CS498.Lib
             if(!_tasks.Any())
                 _tasks.Add(gEvent);
             else 
-            { 
-                var googleEvent = _tasks.Last(x => x.TimeBlock.Start >= gEvent.TimeBlock.End);
-                _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
+            {
+
+                var googleEvent = _tasks.LastOrDefault(x => x.TimeBlock.Start <= gEvent.TimeBlock.Start);
+                var index = _tasks.IndexOf(googleEvent) + 1;
+                if (googleEvent == null)
+                {
+
+                    googleEvent = _tasks.FirstOrDefault(x => x.TimeBlock.Start >= gEvent.TimeBlock.End
+                                                                || x.TimeBlock.End <= gEvent.TimeBlock.Start);
+                    index = _tasks.IndexOf(googleEvent);
+                }
+                _tasks.Insert(index, gEvent);
             }
+            CalculateFreeTime();
         }
         
         public async Task<Dictionary<string, string>> GetAllIds()
