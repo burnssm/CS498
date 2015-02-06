@@ -19,18 +19,18 @@ namespace CS498.Tests
         }
 
         [TestMethod]
-        public async Task AddEventHappy()
+        public void AddEventHappy()
         {
             var testEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
-            var countBefore = MyCalendar.Instance.GetTasks().Count;
-            await MyCalendar.Instance.AddEvent(testEvent);
-            var countAfter = MyCalendar.Instance.GetTasks().Count;
+            var countBefore = MyCalendar.Instance.GetTasks().Result.Count;
+            MyCalendar.Instance.AddEvent(testEvent).Wait();
+            var countAfter = MyCalendar.Instance.GetTasks().Result.Count;
             Assert.AreEqual(countBefore + 1, countAfter);
-            await MyCalendar.Instance.DeleteEvent(testEvent);
+            MyCalendar.Instance.DeleteEvent(testEvent).Wait();
         }
 
         [TestMethod]
-        public async Task AddEventNullsExceptTimeBlock()
+        public void AddEventNullsExceptTimeBlock()
         {
             var testEvent = new GoogleEvent
             {
@@ -39,16 +39,16 @@ namespace CS498.Tests
                 Description = null,
                 Location = null
             };
-            var countBefore = MyCalendar.Instance.GetTasks().Count;
-            await MyCalendar.Instance.AddEvent(testEvent);
-            var countAfter = MyCalendar.Instance.GetTasks().Count;
+            var countBefore = MyCalendar.Instance.GetTasks().Result.Count;
+            MyCalendar.Instance.AddEvent(testEvent).Wait();
+            var countAfter = MyCalendar.Instance.GetTasks().Result.Count;
             Assert.AreEqual(countBefore + 1, countAfter);
-            await MyCalendar.Instance.DeleteEvent(testEvent);
+            MyCalendar.Instance.DeleteEvent(testEvent).Wait();
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public async Task AddEventNullEverything()
+        public void AddEventNullEverything()
         {
             var testEvent = new GoogleEvent
             {
@@ -57,22 +57,22 @@ namespace CS498.Tests
                 Description = null,
                 Location = null
             };
-            await MyCalendar.Instance.AddEvent(testEvent);
+            MyCalendar.Instance.AddEvent(testEvent).Wait();
             Assert.Fail("Exeption should have been thrown for null properties of gEvent");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public async Task AddEventNullEvent()
+        public void AddEventNullEvent()
         {
-            await MyCalendar.Instance.AddEvent(null);
+            MyCalendar.Instance.AddEvent(null).Wait();
             Assert.Fail("Exeption should have been thrown for null properties of gEvent");
         }
         
         [TestMethod]
-        public void FreeTimeConflictCheckNothingAdded()
+        public async Task FreeTimeConflictCheckNothingAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
+            var tasks = await MyCalendar.Instance.GetTasks();
             var freeTime = MyCalendar.Instance.GetFreeTime();
             var problems = 0;
             for (var i = 1; i < tasks.Count; i++)
@@ -87,7 +87,7 @@ namespace CS498.Tests
         [TestMethod]
         public async Task FreeTimeConflictCheckOverlappingTasksAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
+            var tasks = await MyCalendar.Instance.GetTasks();
             var freeTime = MyCalendar.Instance.GetFreeTime();
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(1).AddMinutes(30), _now.AddHours(2).AddMinutes(30));
@@ -108,7 +108,7 @@ namespace CS498.Tests
         [TestMethod]
         public async Task FreeTimeConflictNonOverlappingTasksAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
+            var tasks = await MyCalendar.Instance.GetTasks();
             var freeTime = MyCalendar.Instance.GetFreeTime();
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(2), _now.AddHours(3));
@@ -130,9 +130,9 @@ namespace CS498.Tests
         }
 
         [TestMethod]
-        public void GetTasks()
+        public async Task GetTasks()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
+            var tasks = await MyCalendar.Instance.GetTasks();
             Assert.IsNotNull(tasks);
         }
 
