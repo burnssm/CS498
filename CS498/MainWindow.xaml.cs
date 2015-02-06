@@ -39,41 +39,44 @@ namespace CS498
             }
 
             _events = MyCalendar.Instance.GetTaskEvents();
-            _timeBlock = MyCalendar.Instance.GetFreeTimeBlocks();
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _timeBlock;
             _calendarIds = await MyCalendar.Instance.GetAllIds();
             Calendar.ItemsSource = _calendarIds.Values;
             Calendar.SelectedValue = MyCalendar.Instance.GetIdName();
-            GoogleDate.SelectedValue = MyCalendar.Instance.GetDefaultTimeBlockChoice().ToString();
         }
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
         {
-
             var taskName = TaskName.Text;
-            var selectedTimeBlock = (TimeBlock) GoogleList.SelectedItem;
 
-            var formDirty = string.IsNullOrWhiteSpace(taskName) || selectedTimeBlock == null;
+            var hourMinute = GetHourMinute();
+            var hour = hourMinute.Item1;
+            var minutes = hourMinute.Item2;
+
+            var formDirty = string.IsNullOrWhiteSpace(taskName) ||
+                            (StartTime == null || StartTime.Value == null || !StartTime.IsVisible) ||
+                            (minutes == 0 && hour == 0);
 
             if (!formDirty)
             {
 
                 var description = Description.Text;
-
-                var hour = Hours.Value ?? 0;
-                var minutes = Minutes.Value ?? 0;
+                var location = Location.Text;
+                var startTime = (DateTime)StartTime.Value;
 
                 var newEvent = new GoogleEvent
                 {
                     Title = taskName,
-                    TimeBlock = new TimeBlock(selectedTimeBlock.Start, selectedTimeBlock.Start.AddHours(hour).AddMinutes(minutes)),
-                    Description = description
+                    TimeBlock = new TimeBlock(startTime, startTime.AddHours(hour).AddMinutes(minutes)),
+                    Description = description,
+                    Location = location
                 };
 
                 await MyCalendar.Instance.AddEvent(newEvent);
                 _events = MyCalendar.Instance.GetTasks();
+                ClearForm();
             }
             else
             {
@@ -83,7 +86,6 @@ namespace CS498
                     MessageBoxImage.Exclamation);
 
             }
-            ClearForm();
         }
 
         private void Cancel_OnClick(object sender, RoutedEventArgs e)
@@ -94,12 +96,14 @@ namespace CS498
         private void ClearForm()
         {
             TaskName.Clear();
-            Description.Text = "";
+            Location.Clear();
+            Description.Clear();
             DateTimePicker.Text = "";
             GoogleList.ItemsSource = null;
             GoogleList.UnselectAll();
+            GoogleDate.SelectedIndex = -1;
             Hours.Value = 0;
-            Minutes.Value = 15;
+            Minutes.Value = 0;
         }
 
         private void GoogleDate_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -109,32 +113,30 @@ namespace CS498
 
         private void HoursOrMinutes_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (Minutes == null || Hours == null || Minutes.Value == null || Hours.Value == null) return;
+            var hoursMinutes = GetHourMinute();
+            var hour = hoursMinutes.Item1;
+            var minute = hoursMinutes.Item2;
 
-            var minute = Minutes.Value ?? 0;
-            var hour = Hours.Value?? 0;
-
-            if (hour == 0 && minute == 0) return;
             UpdateTimeBlock();
+            var googleItem = GoogleList == null ? null : GoogleList.SelectedValue as TimeBlock;
+            if (googleItem == null) return;
+            DisplayStartAndEndDate(hour, minute, googleItem);
+
+            if (StartTime == null || StartTime.Value == null) return;
+            var selectedItemEnd = googleItem.End;
+            var startTime = (DateTime)StartTime.Value;
 
 
-            if (StartTime != null && StartTime.Value != null && GoogleList.SelectedValue != null)
+            var newTime = startTime.AddHours(hour).AddMinutes(minute);
+
+
+            if (newTime < selectedItemEnd)
             {
-                var selectedItemEnd = ((TimeBlock)GoogleList.SelectedValue).End;
-                var startTime = (DateTime)StartTime.Value;
-
-
-                var newTime = startTime.AddHours(hour).AddMinutes(minute);
-
-
-                if (newTime < selectedItemEnd)
-                {
-                    EndTime.Content = newTime.ToString("T");
-                }
-                else
-                {
-                    GoogleList.SelectedIndex = -1;
-                }
+                EndTime.Content = newTime.ToString("T");
+            }
+            else
+            {
+                GoogleList.SelectedIndex = -1;
             }
         }
         private void DateTimePicker_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -170,7 +172,27 @@ namespace CS498
             {
                 minutes = Minutes.Value ?? 0;
             }
+
+            if (hour == 0 && minutes == 0)
+            {
+                ChangeVisibility(false);
+            }
             return new Tuple<int, int>(hour, minutes);
+        }
+
+        private void DisplayStartAndEndDate(int hour, int minutes, TimeBlock possibleTimeBlock)
+        {
+            var visibility = !(hour == 0 && minutes == 0);
+            ChangeVisibility(visibility);
+            StartTime.Maximum = null;
+            StartTime.Minimum = null;
+
+            var newMax = possibleTimeBlock.End.AddHours(-hour).AddMinutes(-minutes);
+            var newMin = possibleTimeBlock.Start;
+
+            StartTime.Value = newMin;
+            StartTime.Maximum = newMax;
+            StartTime.Minimum = newMin;
         }
 
         private void Calendar_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -188,6 +210,7 @@ namespace CS498
 
         private void ChangeVisibility(bool visibility)
         {
+            if (StartTimeLabel == null || StartTime == null || EndTime == null) return;
             var visibilityAttribute = visibility ? Visibility.Visible : Visibility.Hidden;
             StartTimeLabel.Visibility = visibilityAttribute;
             StartTime.Visibility = visibilityAttribute;
@@ -206,32 +229,17 @@ namespace CS498
             var possibleTimeBlock = e.AddedItems[0] as TimeBlock;
 
             if (possibleTimeBlock == null) return;
-            ChangeVisibility(true);
-            var minute = Minutes.Value;
-            var hour = Hours.Value;
-
-            StartTime.Maximum = null;
-            StartTime.Minimum = null;
-
-            var newMax = possibleTimeBlock.End.AddHours((double) -hour).AddMinutes((double) -minute);
-            var newMin = possibleTimeBlock.Start;
-
-
-            StartTime.Value = newMin;
-            StartTime.Maximum = newMax;
-            StartTime.Minimum = newMin;
+            var hourMinutes = GetHourMinute();
+            DisplayStartAndEndDate(hourMinutes.Item1, hourMinutes.Item2, possibleTimeBlock);
 
         }
 
         private void StartTime_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            var newValue = (DateTime)e.NewValue;
+            var newValue = (DateTime) e.NewValue;
 
-            var minute = Minutes.Value;
-            var hour = Hours.Value;
-
-            if (hour != null && minute != null)
-                EndTime.Content = newValue.AddHours((double) hour).AddMinutes((double) minute).ToString("T");
+            var hourMinute = GetHourMinute();
+            EndTime.Content = newValue.AddHours(hourMinute.Item1).AddMinutes(hourMinute.Item2).ToString("T");
         }
     }
 }

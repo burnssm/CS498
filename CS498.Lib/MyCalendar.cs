@@ -64,10 +64,6 @@ namespace CS498.Lib
                 var calendar = await _service.Calendars.Get(_primaryId).ExecuteAsync();
                 SetPrimaryId(calendar.Id);
             }
-            else
-            {
-                ResetPrimaryId();
-            }
             await GetAllOwnedCalendars();
             GetTasks();
         }
@@ -99,7 +95,6 @@ namespace CS498.Lib
 
         public ObservableCollection<TimeBlock> GetFreeTimeBlocks(TimeSpan timeSpan, DateTime dueDate, TimeBlockChoices googleDate)
         {
-            if(timeSpan.Equals(new TimeSpan()) || dueDate.Equals(new DateTime())) throw new ArgumentException("Time Span must be more than 0.", "timeSpan");
             var filterEndDate = DateTime.Now.AddDays((int)googleDate);
             var end = dueDate < filterEndDate ? dueDate : filterEndDate;
             var updatedTimeBlock = _freeTime
@@ -171,7 +166,7 @@ namespace CS498.Lib
                 _tasks.Add(gEvent);
             else 
             { 
-                var googleEvent = _tasks.First(x => x.TimeBlock.Start <= gEvent.TimeBlock.Start);
+                var googleEvent = _tasks.Last(x => x.TimeBlock.Start >= gEvent.TimeBlock.End);
                 _tasks.Insert(_tasks.IndexOf(googleEvent), gEvent);
             }
         }
