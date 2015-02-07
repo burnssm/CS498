@@ -26,7 +26,7 @@ namespace CS498
             _calendarController = new CalendarController();
         }
 
-        private async Task LoadUi();
+        private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             _events = await _calendarController.GetTasks();
             _calendarIds = await _calendarController.GetCalendarIds();
@@ -45,11 +45,11 @@ namespace CS498
             var hour = hourMinute.Item1;
             var minutes = hourMinute.Item2;
 
-            var formDirty = string.IsNullOrWhiteSpace(taskName) ||
+            var isFormDirty = string.IsNullOrWhiteSpace(taskName) || 
                             (StartTime == null || StartTime.Value == null || !StartTime.IsVisible) ||
                             (minutes == 0 && hour == 0);
 
-            if (!formDirty)
+            if (!isFormDirty)
             {
 
                 var description = Description.Text;
@@ -74,7 +74,6 @@ namespace CS498
                     "Invalid Form",
                     MessageBoxButton.OK,
                     MessageBoxImage.Exclamation);
-
             }
         }
 
