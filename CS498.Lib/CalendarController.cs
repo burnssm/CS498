@@ -97,7 +97,7 @@ namespace CS498.Lib
                 },
                 Id = gEvent.Id
             };
-            await MyCalendar.Instance.AddEventToCalendarAsync(_primaryId, calendarEvent);
+            gEvent = new GoogleEvent(await MyCalendar.Instance.AddEventToCalendarAsync(_primaryId, calendarEvent));
 
             if (!_tasks.Any())
                 _tasks.Add(gEvent);

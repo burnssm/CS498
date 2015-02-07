@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CS498.Lib;
@@ -77,34 +78,31 @@ namespace CS498.Tests
         [TestMethod]
         public async Task FreeTimeConflictCheckNothingAdded()
         {
-            var tasks = await _calendarController.GetTasks();
+            var events = await _calendarController.GetTasks();
             var freeTime = _calendarController.GetFreeTime();
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
+            var problems = events.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
             Assert.AreEqual(0, problems);
         }
 
         [TestMethod]
         public async Task FreeTimeConflictCheckOverlappingTasksAdded()
         {
-            var tasks = await _calendarController.GetTasks();
-            var freeTime = _calendarController.GetFreeTime();
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(1).AddMinutes(30), _now.AddHours(2).AddMinutes(30));
+
             await _calendarController.AddEvent(firstEvent);
             await _calendarController.AddEvent(secondEvent);
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
+
+            var allTasks = await _calendarController.GetTasks();
+            var addedTasks = allTasks.Take(allTasks.IndexOf(secondEvent));
+            var freeTime = _calendarController.GetFreeTime();
+            var problems = addedTasks.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
             await _calendarController.DeleteEvent(firstEvent);
             await _calendarController.DeleteEvent(secondEvent);
             Assert.AreEqual(0, problems);
@@ -113,21 +111,23 @@ namespace CS498.Tests
         [TestMethod]
         public async Task FreeTimeConflictNonOverlappingTasksAdded()
         {
-            var tasks = await _calendarController.GetTasks();
-            var freeTime = _calendarController.GetFreeTime();
+
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(2), _now.AddHours(3));
             var thirdEvent = TestEventHelper(_now.AddHours(3), _now.AddHours(4));
+
             await _calendarController.AddEvent(firstEvent);
             await _calendarController.AddEvent(secondEvent);
             await _calendarController.AddEvent(thirdEvent);
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
+
+            var allTasks = await _calendarController.GetTasks();
+            var addedTasks = allTasks.Take(allTasks.IndexOf(thirdEvent));
+            var freeTime = _calendarController.GetFreeTime();
+            var problems = addedTasks.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
+
             await _calendarController.DeleteEvent(firstEvent);
             await _calendarController.DeleteEvent(secondEvent);
             await _calendarController.DeleteEvent(thirdEvent);

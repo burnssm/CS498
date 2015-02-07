@@ -59,10 +59,10 @@ namespace CS498.Lib
             return request.Items;
         }
 
-        public async Task AddEventToCalendarAsync(string id, Event calendarEvent)
+        public async Task<Event> AddEventToCalendarAsync(string id, Event calendarEvent)
         {
             var service = await GetService();
-            await service.Events.Insert(calendarEvent, id).ExecuteAsync();
+            return await service.Events.Insert(calendarEvent, id).ExecuteAsync();
         }
 
         /// <summary>
