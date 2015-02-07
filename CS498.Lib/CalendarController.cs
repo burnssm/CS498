@@ -41,8 +41,9 @@ namespace CS498.Lib
             return new ObservableCollection<TimeBlock>(_freeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock));
         }
 
-        public async Task<ObservableCollection<GoogleEvent>> GetTasks(int numberOfDays = (int)LengthofTimeToShow)
+        public async Task UpdateTasks(int numberOfDays = (int) LengthofTimeToShow)
         {
+
             _tasks.Clear();
             var request = await MyCalendar.Instance.GetAllEventsAsync(_primaryId, numberOfDays);
             foreach (var events in request.Where(events => events.End.DateTime.GetValueOrDefault() > DateTime.Now))
@@ -57,6 +58,10 @@ namespace CS498.Lib
                 });
             }
             CalculateFreeTime(numberOfDays);
+        }
+        public async Task<ObservableCollection<GoogleEvent>> GetTasks(int numberOfDays = (int)LengthofTimeToShow)
+        {
+            if (!_tasks.Any()) await UpdateTasks(numberOfDays);
             return _tasks;
         }
 
@@ -140,6 +145,7 @@ namespace CS498.Lib
             _primaryId = id;
             Settings.Default[PrimaryId] = id;
             Settings.Default.Save();
+            await UpdateTasks();
         }
         public string GetIdName()
         {
