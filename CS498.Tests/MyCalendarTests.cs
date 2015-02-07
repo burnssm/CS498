@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CS498.Lib;
@@ -10,27 +11,30 @@ namespace CS498.Tests
     public class MyCalendarTests
     {
         private DateTime _now;
+        private CalendarController _calendarController;
 
         [TestInitialize]
         public void Initialize()
         {
             _now = DateTime.Now.AddHours(1);
-            MyCalendar.Instance.Authorize().Wait();
+            _calendarController = new CalendarController();
         }
 
         [TestMethod]
         public async Task AddEventHappy()
         {
             var testEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
-            var countBefore = MyCalendar.Instance.GetTasks().Count;
-            await MyCalendar.Instance.AddEvent(testEvent);
-            var countAfter = MyCalendar.Instance.GetTasks().Count;
+            var tasks = await _calendarController.GetTasks();
+            var countBefore = tasks.Count;
+            await _calendarController.AddEvent(testEvent);
+            var newTasks = await _calendarController.GetTasks();
+            var countAfter = newTasks.Count;
             Assert.AreEqual(countBefore + 1, countAfter);
-            await MyCalendar.Instance.DeleteEvent(testEvent);
+            await _calendarController.DeleteEvent(testEvent);
         }
 
         [TestMethod]
-        public async Task AddEventNullsExceptTimeBlock()
+        public async void AddEventNullsExceptTimeBlock()
         {
             var testEvent = new GoogleEvent
             {
@@ -39,11 +43,13 @@ namespace CS498.Tests
                 Description = null,
                 Location = null
             };
-            var countBefore = MyCalendar.Instance.GetTasks().Count;
-            await MyCalendar.Instance.AddEvent(testEvent);
-            var countAfter = MyCalendar.Instance.GetTasks().Count;
+            var tasks = await _calendarController.GetTasks();
+            var countBefore = tasks.Count;
+            await _calendarController.AddEvent(testEvent);
+            var newTasks = await _calendarController.GetTasks();
+            var countAfter = newTasks.Count;
             Assert.AreEqual(countBefore + 1, countAfter);
-            await MyCalendar.Instance.DeleteEvent(testEvent);
+            await _calendarController.DeleteEvent(testEvent);
         }
 
         [TestMethod]
@@ -57,7 +63,7 @@ namespace CS498.Tests
                 Description = null,
                 Location = null
             };
-            await MyCalendar.Instance.AddEvent(testEvent);
+            await _calendarController.AddEvent(testEvent);
             Assert.Fail("Exeption should have been thrown for null properties of gEvent");
         }
 
@@ -65,164 +71,167 @@ namespace CS498.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task AddEventNullEvent()
         {
-            await MyCalendar.Instance.AddEvent(null);
+            await _calendarController.AddEvent(null);
             Assert.Fail("Exeption should have been thrown for null properties of gEvent");
         }
         
         [TestMethod]
-        public void FreeTimeConflictCheckNothingAdded()
+        public async Task FreeTimeConflictCheckNothingAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
-            var freeTime = MyCalendar.Instance.GetFreeTime();
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
+            var events = await _calendarController.GetTasks();
+            var freeTime = _calendarController.GetFreeTime();
+            var problems = events.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
             Assert.AreEqual(0, problems);
         }
 
         [TestMethod]
         public async Task FreeTimeConflictCheckOverlappingTasksAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
-            var freeTime = MyCalendar.Instance.GetFreeTime();
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(1).AddMinutes(30), _now.AddHours(2).AddMinutes(30));
-            await MyCalendar.Instance.AddEvent(firstEvent);
-            await MyCalendar.Instance.AddEvent(secondEvent);
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
-            await MyCalendar.Instance.DeleteEvent(firstEvent);
-            await MyCalendar.Instance.DeleteEvent(secondEvent);
+
+            await _calendarController.AddEvent(firstEvent);
+            await _calendarController.AddEvent(secondEvent);
+
+            var allTasks = await _calendarController.GetTasks();
+            var addedTasks = allTasks.Take(allTasks.IndexOf(secondEvent));
+            var freeTime = _calendarController.GetFreeTime();
+            var problems = addedTasks.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
+            await _calendarController.DeleteEvent(firstEvent);
+            await _calendarController.DeleteEvent(secondEvent);
             Assert.AreEqual(0, problems);
         }
         
         [TestMethod]
         public async Task FreeTimeConflictNonOverlappingTasksAdded()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
-            var freeTime = MyCalendar.Instance.GetFreeTime();
+
             var firstEvent = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
             var secondEvent = TestEventHelper(_now.AddHours(2), _now.AddHours(3));
             var thirdEvent = TestEventHelper(_now.AddHours(3), _now.AddHours(4));
-            await MyCalendar.Instance.AddEvent(firstEvent);
-            await MyCalendar.Instance.AddEvent(secondEvent);
-            await MyCalendar.Instance.AddEvent(thirdEvent);
-            var problems = 0;
-            for (var i = 1; i < tasks.Count; i++)
-            {
-                problems += freeTime.TakeWhile(timeBlock => timeBlock.Start >= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End <= tasks[i - 1].TimeBlock.End)
-                    .TakeWhile(timeBlock => timeBlock.Start <= tasks[i - 1].TimeBlock.End || timeBlock.End >= tasks[i].TimeBlock.Start).Count();
-            }
-            await MyCalendar.Instance.DeleteEvent(firstEvent);
-            await MyCalendar.Instance.DeleteEvent(secondEvent);
-            await MyCalendar.Instance.DeleteEvent(thirdEvent);
+
+            await _calendarController.AddEvent(firstEvent);
+            await _calendarController.AddEvent(secondEvent);
+            await _calendarController.AddEvent(thirdEvent);
+
+            var allTasks = await _calendarController.GetTasks();
+            var addedTasks = allTasks.Take(allTasks.IndexOf(thirdEvent));
+            var freeTime = _calendarController.GetFreeTime();
+            var problems = addedTasks.Sum(googleEvent => freeTime.Count(timeBlock => (googleEvent.TimeBlock.Start < timeBlock.Start && googleEvent.TimeBlock.End > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start < timeBlock.End && googleEvent.TimeBlock.Start > timeBlock.Start)
+                                                                                 || (googleEvent.TimeBlock.Start <= timeBlock.Start && googleEvent.TimeBlock.End >= timeBlock.End)
+                                                                                 || (googleEvent.TimeBlock.Start >= timeBlock.Start && googleEvent.TimeBlock.End <= timeBlock.End)));
+
+            await _calendarController.DeleteEvent(firstEvent);
+            await _calendarController.DeleteEvent(secondEvent);
+            await _calendarController.DeleteEvent(thirdEvent);
             Assert.AreEqual(0, problems);
         }
 
         [TestMethod]
-        public void GetTasks()
+        public async Task GetTasks()
         {
-            var tasks = MyCalendar.Instance.GetTasks();
+            var tasks = await _calendarController.GetTasks();
             Assert.IsNotNull(tasks);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void GetFreeTimeNoTime()
+        public async Task GetFreeTimeHappyToday()
         {
-            MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(0, 0, 0), _now.AddHours(7),
-                TimeBlockChoices.Today);
-            Assert.Fail("Exception should have been thrown");
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void GetFreeTimeBadTimeSpan()
-        {
-            var ts = new TimeSpan();
-            MyCalendar.Instance.GetFreeTimeBlocks(ts, _now.AddHours(7),
-                TimeBlockChoices.Today);
-            Assert.Fail("Exception should have been thrown");
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void GetFreeTimeBadDueDate()
-        {
-            var dt = new DateTime();
-            MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), dt,
-                TimeBlockChoices.Today);
-            Assert.Fail("Exception should have been thrown");
-        }
-
-        [TestMethod]
-        public void GetFreeTimeHappyToday()
-        {
-            var freeTime = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddHours(7),
+            await _calendarController.GetTasks();
+            var freeTime = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddHours(7),
                 TimeBlockChoices.Today);
             Assert.IsTrue(freeTime.Count > 0);
         }
 
         [TestMethod]
-        public void GetFreeTimeDueDateLessThanSearchTimeToday()
+        public async Task GetFreeTimeDueDateLessThanSearchTimeToday()
         {
-            var freeTimeDueDateBigger = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(3),
+            var testEventToday = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
+            await _calendarController.AddEvent(testEventToday);
+
+            var testEventTomorrow = TestEventHelper(_now.AddHours(1).AddDays(1), _now.AddHours(2).AddDays(1));
+            await _calendarController.AddEvent(testEventTomorrow);
+
+            var freeTimeDueDateBigger = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(3),
                 TimeBlockChoices.Today).Count;
-            var freeTimeDueDateSame = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(1),
+
+            var freeTimeDueDateSame = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(1),
                 TimeBlockChoices.Today).Count;
             Assert.AreEqual(freeTimeDueDateBigger, freeTimeDueDateSame);
+            await _calendarController.DeleteEvent(testEventToday);
+            await _calendarController.DeleteEvent(testEventTomorrow);
+
         }
         
         [TestMethod]
-        public void GetFreeTimeHappyTomorrow()
+        public async Task GetFreeTimeHappyTomorrow()
         {
-            var freeTime = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(1).AddHours(12),
+            await _calendarController.GetTasks();
+            var freeTime = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(1).AddHours(12),
                 TimeBlockChoices.Tomorrow);
             Assert.IsTrue(freeTime.Count > 0);
         }
 
         [TestMethod]
-        public void GetFreeTimeDueDateLessThanSearchTimeTomorrow()
+        public async Task GetFreeTimeDueDateLessThanSearchTimeTomorrow()
         {
-            var freeTimeDueDateBigger = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
+            var testEventToday = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
+            await _calendarController.AddEvent(testEventToday);
+
+            var testEventTomorrow = TestEventHelper(_now.AddHours(1).AddDays(2), _now.AddHours(2).AddDays(2));
+            await _calendarController.AddEvent(testEventTomorrow);
+
+            var freeTimeDueDateBigger = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
                 TimeBlockChoices.Tomorrow).Count;
-            var freeTimeDueDateSame = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(2),
+            var freeTimeDueDateSame = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(3),
                 TimeBlockChoices.Tomorrow).Count;
             Assert.AreEqual(freeTimeDueDateBigger, freeTimeDueDateSame);
+
+            await _calendarController.DeleteEvent(testEventToday);
+            await _calendarController.DeleteEvent(testEventTomorrow);
         }
         
         [TestMethod]
-        public void GetFreeTimeHappyWeek()
+        public async Task GetFreeTimeHappyWeek()
         {
-            var freeTime = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(6),
+            await _calendarController.GetTasks();
+            var freeTime = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(6),
                 TimeBlockChoices.FullWeek);
             Assert.IsTrue(freeTime.Count > 0);
         }
 
         [TestMethod]
-        public void GetFreeTimeDueDateLessThanSearchTimeWeek()
+        public async Task GetFreeTimeDueDateLessThanSearchTimeWeek()
         {
-            var freeTimeDueDateBigger = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
+
+            var testEventToday = TestEventHelper(_now.AddHours(1), _now.AddHours(2));
+            await _calendarController.AddEvent(testEventToday);
+
+            var testEvent20Days = TestEventHelper(_now.AddHours(1).AddDays(2), _now.AddHours(2).AddDays(2));
+            await _calendarController.AddEvent(testEvent20Days);
+
+            var freeTimeDueDateBigger = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
                 TimeBlockChoices.FullWeek).Count;
-            var freeTimeDueDateSame = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(7),
+            var freeTimeDueDateSame = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(7),
                 TimeBlockChoices.FullWeek).Count;
             Assert.AreEqual(freeTimeDueDateBigger, freeTimeDueDateSame);
+
+            await _calendarController.DeleteEvent(testEventToday);
+            await _calendarController.DeleteEvent(testEvent20Days);
         }
 
         [TestMethod]
-        public void GetFreeTimeHappyTwoWeeks()
+        public async Task GetFreeTimeHappyTwoWeeks()
         {
-            var freeTime = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(7),
+            await _calendarController.GetTasks();
+            var freeTime = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(7),
                 TimeBlockChoices.TwoWeeks);
             Assert.IsTrue(freeTime.Count > 0);
         }
@@ -230,40 +239,40 @@ namespace CS498.Tests
         [TestMethod]
         public void GetFreeTimeDueDateLessThanSearchTimeTwoWeeks()
         {
-            var freeTimeDueDateBigger = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
+            var freeTimeDueDateBigger = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(40),
                 TimeBlockChoices.TwoWeeks).Count;
-            var freeTimeDueDateSame = MyCalendar.Instance.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(14),
+            var freeTimeDueDateSame = _calendarController.GetFreeTimeBlocks(new TimeSpan(1, 0, 0), _now.AddDays(14),
                 TimeBlockChoices.TwoWeeks).Count;
             Assert.AreEqual(freeTimeDueDateBigger, freeTimeDueDateSame);
         }
 
         [TestMethod]
-        public void GetSetPrimaryIds()
+        public async Task GetSetPrimaryIds()
         {
-            Assert.IsNotNull(MyCalendar.Instance.GetAllIds().Result);
-            var primaryIdList = MyCalendar.Instance.GetAllIds().Result;
+            Assert.IsNotNull(_calendarController.GetCalendarIds());
+            var primaryIdList = _calendarController.GetCalendarIds().Result;
             foreach (var id in primaryIdList)
             {
-                MyCalendar.Instance.SetPrimaryId(id.Key);
-                Assert.AreEqual(MyCalendar.Instance.GetIdName(), id.Value);
-                Assert.AreEqual(MyCalendar.Instance.GetIdName(), primaryIdList[id.Key]);
+                await _calendarController.SetPrimaryId(id.Key);
+                Assert.AreEqual(_calendarController.GetIdName(), id.Value);
+                Assert.AreEqual(_calendarController.GetIdName(), primaryIdList[id.Key]);
             }
-            MyCalendar.Instance.ResetPrimaryId();
+            await _calendarController.ResetPrimaryId();
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void SetPrimaryIdsBadId()
+        public async Task SetPrimaryIdsBadId()
         {
-            MyCalendar.Instance.SetPrimaryId("notakey");
+            await _calendarController.SetPrimaryId("notakey");
             Assert.Fail("Exception should have been thrown. That key definitely doesn't exist.");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void SetPrimaryIdsNullId()
+        public async Task SetPrimaryIdsNullId()
         {
-            MyCalendar.Instance.SetPrimaryId(null);
+            await _calendarController.SetPrimaryId(null);
             Assert.Fail("Exception should have been thrown. That key definitely doesn't exist.");
         }
 
