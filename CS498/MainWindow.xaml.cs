@@ -18,19 +18,19 @@ namespace CS498
         private ObservableCollection<GoogleEvent> _events;
         private ObservableCollection<TimeBlock> _timeBlock;
         private Dictionary<string, string> _calendarIds;
-        private CalendarController calendarController;
+        private readonly CalendarController _calendarController;
 
         public MainWindow()
         {
             InitializeComponent();
-            calendarController = new CalendarController();
+            _calendarController = new CalendarController();
         }
 
-        private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        private async Task LoadUi();
         {
-            _events = await calendarController.GetTasks();
-            _calendarIds = await calendarController.GetCalendarIds();
-            Calendar.SelectedValue = calendarController.GetIdName();
+            _events = await _calendarController.GetTasks();
+            _calendarIds = await _calendarController.GetCalendarIds();
+            Calendar.SelectedValue = _calendarController.GetIdName();
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _timeBlock;
@@ -64,8 +64,8 @@ namespace CS498
                     Location = location
                 };
 
-                await calendarController.AddEvent(newEvent);
-                _timeBlock = calendarController.GetFreeTime();
+                await _calendarController.AddEvent(newEvent);
+                _timeBlock = _calendarController.GetFreeTime();
                 ClearForm();
             }
             else
@@ -140,14 +140,14 @@ namespace CS498
             if (GoogleDate == null || GoogleDate.SelectedValue == null) return;
             var googleDate = (TimeBlockChoices)(Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue));
             var hoursMinutes = GetHourMinute();
-            DateTime timeEnd = DateTime.MaxValue;
+            var timeEnd = DateTime.MaxValue;
             if (DateTimePicker.Value != null)
             {
                  timeEnd = DateTimePicker.Value.Value;
                 
             }
             var timeSpan = new TimeSpan(hoursMinutes.Item1, hoursMinutes.Item2, 0);
-            GoogleList.ItemsSource = calendarController.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
+            GoogleList.ItemsSource = _calendarController.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
         }
 
         private Tuple<int, int> GetHourMinute()
@@ -191,20 +191,20 @@ namespace CS498
 
             var id = _calendarIds.FirstOrDefault(x => x.Value == calendar).Key;
             if (string.IsNullOrEmpty(id)) return;
-            await calendarController.SetPrimaryId(id);
+            await _calendarController.SetPrimaryId(id);
 
             if (e.RemovedItems.Count == 0) return;
-            _events = await calendarController.GetTasks();
-            _timeBlock = calendarController.GetFreeTime();
+            _events = await _calendarController.GetTasks();
+            _timeBlock = _calendarController.GetFreeTime();
         }
 
-        private void ChangeVisibility(bool visibility)
+        private void ChangeVisibility(bool isVisible)
         {
             if (StartTimeLabel == null || StartTime == null || EndTime == null) return;
-            var visibilityAttribute = visibility ? Visibility.Visible : Visibility.Hidden;
-            StartTimeLabel.Visibility = visibilityAttribute;
-            StartTime.Visibility = visibilityAttribute;
-            EndTime.Visibility = visibilityAttribute;
+            var visibility = isVisible ? Visibility.Visible : Visibility.Hidden;
+            StartTimeLabel.Visibility = visibility;
+            StartTime.Visibility = visibility;
+            EndTime.Visibility = visibility;
 
         }
 
@@ -221,7 +221,6 @@ namespace CS498
             if (possibleTimeBlock == null) return;
             var hourMinutes = GetHourMinute();
             DisplayStartAndEndDate(hourMinutes.Item1, hourMinutes.Item2, possibleTimeBlock);
-
         }
 
         private void StartTime_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
