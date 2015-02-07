@@ -21,7 +21,6 @@
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="24" />
-            <RowDefinition Height="24" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -30,17 +29,9 @@
                 <MenuItem Header="_File">
                     <MenuItem Header="_Exit" />
                 </MenuItem>
-                <MenuItem Header="_Edit">
-                    <MenuItem Header="_Settings" />
-                </MenuItem>
             </Menu>
         </Grid>
-        <ToolBarTray Grid.Row="1">
-            <ToolBar>
-                <Button>TEST</Button>
-            </ToolBar>
-        </ToolBarTray>
-        <Grid Margin="0,0,0,0" Grid.Row="2" >
+        <Grid Margin="0,0,0,0" Grid.Row="1" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" MinWidth="100"/>
                 <ColumnDefinition Width="2*" MinWidth="200"/>

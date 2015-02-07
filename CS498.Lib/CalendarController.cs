@@ -10,18 +10,20 @@ namespace CS498.Lib
 {
     public class CalendarController
     {
-        private readonly ObservableCollection<TimeBlock> _freeTime;
+        private readonly List<TimeBlock> _freeTime;
         private readonly ObservableCollection<GoogleEvent> _tasks;
         private string _primaryId;
         private const string PrimaryId = "PrimaryId";
         private Dictionary<string, string> _calendarIds; 
         private const TimeBlockChoices LengthofTimeToShow = TimeBlockChoices.TwoWeeks;
+        private DateTime _currentDateTime;
 
         public CalendarController ()
         {
             _tasks = new ObservableCollection<GoogleEvent>();
-            _freeTime = new ObservableCollection<TimeBlock>();
+            _freeTime = new List<TimeBlock>();
             _primaryId = (string)Settings.Default[PrimaryId];
+            _currentDateTime = DateTime.Now;
 
         }
 
@@ -30,15 +32,15 @@ namespace CS498.Lib
             return _calendarIds ?? (_calendarIds = await MyCalendar.Instance.GetAllCalendarsIdsAsync());
         }
 
-        public ObservableCollection<TimeBlock> GetFreeTimeBlocks(TimeSpan timeSpan, DateTime dueDate, TimeBlockChoices googleDate)
+        public List<TimeBlock> GetFreeTime(TimeSpan timeSpan, DateTime dueDate, TimeBlockChoices googleDate)
         {
-            var filterEndDate = DateTime.Now.AddDays((int)googleDate);
+            var filterEndDate = _currentDateTime.AddDays((int)googleDate);
             var end = dueDate < filterEndDate ? dueDate : filterEndDate;
             var updatedTimeBlock = _freeTime
                                     .Where(x => x.Duration >= timeSpan && x.End >= end && x.Start <= end)
                                     .Select(x => new TimeBlock(x.Start, end))
                                     .ToList();
-            return new ObservableCollection<TimeBlock>(_freeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock));
+            return _freeTime.Where(x => x.Duration >= timeSpan && x.End <= end).Concat(updatedTimeBlock).ToList();
         }
 
         public async Task UpdateTasks(int numberOfDays = (int) LengthofTimeToShow)
@@ -46,7 +48,7 @@ namespace CS498.Lib
 
             _tasks.Clear();
             var request = await MyCalendar.Instance.GetAllEventsAsync(_primaryId, numberOfDays);
-            foreach (var events in request.Where(events => events.End.DateTime.GetValueOrDefault() > DateTime.Now))
+            foreach (var events in request.Where(events => events.End.DateTime.GetValueOrDefault() > _currentDateTime))
             {
                 _tasks.Add(new GoogleEvent(events.Id)
                 {
@@ -70,14 +72,14 @@ namespace CS498.Lib
         {
             if (!_tasks.Any()) return;
             _freeTime.Clear();
-            var endTime = DateTime.Now.AddDays(numberOfDays);
+            var endTime = _currentDateTime.AddDays(numberOfDays);
             for (var x = 1; x < _tasks.Count; x++)
             {
                 if (_tasks[x - 1].TimeBlock.End < _tasks[x].TimeBlock.Start)
                     _freeTime.Add(new TimeBlock(_tasks[x - 1].TimeBlock.End, _tasks[x].TimeBlock.Start));
             }
-            if (_tasks.First().TimeBlock.Start >= DateTime.Now)
-                _freeTime.Insert(0, new TimeBlock(DateTime.Now, _tasks.First().TimeBlock.Start));
+            if (_tasks.First().TimeBlock.Start >= _currentDateTime)
+                _freeTime.Insert(0, new TimeBlock(_currentDateTime, _tasks.First().TimeBlock.Start));
 
             if (_tasks.Last().TimeBlock.End < endTime)
                 _freeTime.Add(new TimeBlock(_tasks.Last().TimeBlock.End, endTime));
@@ -123,7 +125,7 @@ namespace CS498.Lib
             CalculateFreeTime();
         }
         
-        public ObservableCollection<TimeBlock> GetFreeTime()
+        public List<TimeBlock> GetFreeTime()
         {
             return _freeTime;
         }
@@ -157,6 +159,11 @@ namespace CS498.Lib
             var settingsProperty = Settings.Default.Properties[PrimaryId];
             if (settingsProperty != null)
                 await SetPrimaryId((string)settingsProperty.DefaultValue);
+        }
+
+        public TimeBlockChoices GetLengthOfTimeToShow()
+        {
+            return LengthofTimeToShow;
         }
     }
 }

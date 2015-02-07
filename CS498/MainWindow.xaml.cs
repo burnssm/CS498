@@ -16,7 +16,7 @@ namespace CS498
     public partial class MainWindow
     {
         private ObservableCollection<GoogleEvent> _events;
-        private ObservableCollection<TimeBlock> _timeBlock;
+        private ObservableCollection<TimeBlock> _freeTime;
         private Dictionary<string, string> _calendarIds;
         private readonly CalendarController _calendarController;
 
@@ -30,11 +30,14 @@ namespace CS498
         {
             _events = await _calendarController.GetTasks();
             _calendarIds = await _calendarController.GetCalendarIds();
+            _freeTime = new ObservableCollection<TimeBlock>();
+            PopulateGoogleList(_calendarController.GetFreeTime());
             Calendar.SelectedValue = _calendarController.GetIdName();
 
             TaskList.ItemsSource = _events;
-            GoogleList.ItemsSource = _timeBlock;
+            GoogleList.ItemsSource = _freeTime;
             Calendar.ItemsSource = _calendarIds.Values;
+            GoogleDate.SelectedValue = _calendarController.GetLengthOfTimeToShow().ToString();
         }
 
         private async void Save_OnClick(object sender, RoutedEventArgs e)
@@ -65,7 +68,7 @@ namespace CS498
                 };
 
                 await _calendarController.AddEvent(newEvent);
-                _timeBlock = _calendarController.GetFreeTime();
+                PopulateGoogleList( _calendarController.GetFreeTime());
                 ClearForm();
             }
             else
@@ -88,9 +91,10 @@ namespace CS498
             Location.Clear();
             Description.Clear();
             DateTimePicker.Text = "";
-            GoogleList.ItemsSource = null;
             GoogleList.UnselectAll();
             GoogleDate.SelectedIndex = -1;
+            GoogleDate.SelectedValue = _calendarController.GetLengthOfTimeToShow().ToString();
+            PopulateGoogleList(_calendarController.GetFreeTime());
             Hours.Value = 0;
             Minutes.Value = 0;
         }
@@ -137,6 +141,7 @@ namespace CS498
         {
 
             if (GoogleDate == null || GoogleDate.SelectedValue == null) return;
+            //Found at https://msdn.microsoft.com/en-us/library/essfb559%28v=vs.110%29.aspx
             var googleDate = (TimeBlockChoices)(Enum.Parse(typeof(TimeBlockChoices), (string)GoogleDate.SelectedValue));
             var hoursMinutes = GetHourMinute();
             var timeEnd = DateTime.MaxValue;
@@ -146,7 +151,7 @@ namespace CS498
                 
             }
             var timeSpan = new TimeSpan(hoursMinutes.Item1, hoursMinutes.Item2, 0);
-            GoogleList.ItemsSource = _calendarController.GetFreeTimeBlocks(timeSpan, timeEnd, googleDate);
+            PopulateGoogleList( _calendarController.GetFreeTime(timeSpan, timeEnd, googleDate));
         }
 
         private Tuple<int, int> GetHourMinute()
@@ -194,7 +199,7 @@ namespace CS498
 
             if (e.RemovedItems.Count == 0) return;
             _events = await _calendarController.GetTasks();
-            _timeBlock = _calendarController.GetFreeTime();
+            PopulateGoogleList( _calendarController.GetFreeTime());
         }
 
         private void ChangeVisibility(bool isVisible)
@@ -228,6 +233,25 @@ namespace CS498
 
             var hourMinute = GetHourMinute();
             EndTime.Content = newValue.AddHours(hourMinute.Item1).AddMinutes(hourMinute.Item2).ToString("T");
+        }
+
+        private void PopulateGoogleList(IReadOnlyList<TimeBlock> timeBlocks)
+        {
+            var selectedValue = GoogleList.SelectedValue as TimeBlock;
+            var index = -1;
+            for( var i = 0; i< timeBlocks.Count; i++)
+            {
+                if (selectedValue != null && timeBlocks[i].Start == selectedValue.Start)
+                {
+                    index = i;
+                }
+            }
+            _freeTime.Clear();
+            foreach (var timeBlock in timeBlocks)
+            {
+                _freeTime.Add(timeBlock);
+            }
+            GoogleList.SelectedIndex = index;
         }
     }
 }
