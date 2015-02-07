@@ -94,11 +94,11 @@ namespace CS498.Lib
                 Location = gEvent.Location,
                 Start = new EventDateTime
                 {
-                    DateTime = gEvent.TimeBlock.Start,
+                    DateTime = gEvent.TimeBlock.Start
                 },
                 End = new EventDateTime
                 {
-                    DateTime = gEvent.TimeBlock.End,
+                    DateTime = gEvent.TimeBlock.End
                 },
                 Id = gEvent.Id
             };
