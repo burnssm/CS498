@@ -70,8 +70,8 @@ namespace CS498.Lib
 
         private void CalculateFreeTime(int numberOfDays = (int)LengthofTimeToShow)
         {
-            if (!_tasks.Any()) return;
             _freeTime.Clear();
+            if (!_tasks.Any()) return;
             var endTime = _currentDateTime.AddDays(numberOfDays);
             for (var x = 1; x < _tasks.Count; x++)
             {
@@ -149,8 +149,12 @@ namespace CS498.Lib
             Settings.Default.Save();
             await UpdateTasks();
         }
-        public string GetIdName()
+        public async Task<string> GetIdName()
         {
+            if(!_calendarIds.ContainsKey(_primaryId))
+            {
+                _primaryId = await MyCalendar.Instance.GetPrimaryId(_primaryId);
+            }
             return _calendarIds[_primaryId];
         }
 

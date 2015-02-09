@@ -32,7 +32,7 @@ namespace CS498
             _calendarIds = await _calendarController.GetCalendarIds();
             _freeTime = new ObservableCollection<TimeBlock>();
             PopulateGoogleList(_calendarController.GetFreeTime());
-            Calendar.SelectedValue = _calendarController.GetIdName();
+            Calendar.SelectedValue = await _calendarController.GetIdName();
 
             TaskList.ItemsSource = _events;
             GoogleList.ItemsSource = _freeTime;

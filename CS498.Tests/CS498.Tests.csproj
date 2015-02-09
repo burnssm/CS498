@@ -118,7 +118,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="MyCalendarTests.cs" />
+    <Compile Include="CalendarTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

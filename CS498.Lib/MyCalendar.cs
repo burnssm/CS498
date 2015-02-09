@@ -46,6 +46,12 @@ namespace CS498.Lib
             return _service;
         }
 
+        public async Task<string> GetPrimaryId(string id)
+        {
+            var calendar = await _service.Calendars.Get(id).ExecuteAsync();
+            return calendar.Id;
+        }
+
         public async Task<IList<Event>> GetAllEventsAsync(string id,int numberOfDays)
         {
             var endTime = DateTime.Now.AddDays(numberOfDays);
